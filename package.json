@@ -1,0 +1,36 @@
+{
+  "name": "lasagna",
+  "version": "0.1.0",
+  "description": "lasagna.js, the reference client for the Lasagna service",
+  "main": "dist/lasagna.ts",
+  "types": "dist/lasagna.d.ts",
+  "files": [
+    "lib/"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "lint": "tslint -p tsconfig.json",
+    "test": "jest"
+  },
+  "keywords": [
+    "lasagna",
+    "realtime",
+    "socket",
+    "websocket",
+    "typescript"
+  ],
+  "author": "Automattic, Inc",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^25.2.1",
+    "@types/phoenix": "^1.4.4",
+    "jest": "^25.3.0",
+    "nock": "^12.0.3",
+    "ts-jest": "^25.4.0",
+    "tslint": "^6.1.1",
+    "typescript": "^3.8.3"
+  },
+  "dependencies": {
+    "phoenix": "^1.4.16"
+  }
+}
