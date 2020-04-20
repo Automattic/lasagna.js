@@ -8,11 +8,13 @@ jest.mock("phoenix", () => MockPhoenix);
 import Lasagna from "../lib/lasagna";
 
 const url = "http://unit-test.local";
+const testJwt =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1MTYyNDkwMjJ9.yhajB9YVkJKfPgly4pm2Kizmto0xXdC50-URV3g9eno";
 let lasagna: Lasagna;
 
 describe("Channel", () => {
   beforeEach(() => {
-    lasagna = new Lasagna(() => "faux-jwt-resp", url);
+    lasagna = new Lasagna(() => testJwt, url);
     lasagna.connect({ remote: "stuff" });
     lasagna.initChannel("unit-test:thing1", { jwt: "yadayada" });
     lasagna.initChannel("unit-test:thing3", { jwt: "lololol" });
@@ -25,7 +27,9 @@ describe("Channel", () => {
 
     expect(lasagna.CHANNELS["unit-test:thing2"].channel).toBeDefined();
     expect(lasagna.CHANNELS["unit-test:thing2"]).toMatchObject({
-      jwt: "faux-jwt-resp",
+      params: { jwt: testJwt, private: "thingy" },
+      topic: "unit-test:thing2",
+      jwt_exp: 1516249022000,
       retries: 0,
     });
   });
@@ -35,7 +39,9 @@ describe("Channel", () => {
 
     expect(lasagna.CHANNELS["unit-test:thing2"].channel).toBeDefined();
     expect(lasagna.CHANNELS["unit-test:thing2"]).toMatchObject({
-      jwt: "blahblah",
+      params: { jwt: "blahblah" },
+      topic: "unit-test:thing2",
+      jwt_exp: 0, // expected! because bad JWT
       retries: 0,
     });
   });
