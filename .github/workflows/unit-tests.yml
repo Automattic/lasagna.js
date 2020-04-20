@@ -9,7 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - run: npm install
+      - run: npm ci
 
       - name: TypeScript Check
         run: npm run lint
