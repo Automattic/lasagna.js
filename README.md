@@ -7,7 +7,6 @@ This client provides:
 - ⏩ Websocket Connectivity: keepin' it real(time).
 - 🧬 Multiplexing: one tube, myriad of topics.
 - 🗝️ JWT Auth Management: we reach out to you, you sign, we send.
-- ℹ️ TypeScript Types:
 
 ## Getting Started
 
