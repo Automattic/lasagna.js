@@ -14,8 +14,6 @@ describe("Socket", () => {
     expect(lasagna.lasagnaUrl).toBe(url);
   });
 
-  test("connect/1", () => {});
-
   test("connect/1 with jwt param", () => {
     const params = { jwt: "test" };
     lasagna.connect(params);

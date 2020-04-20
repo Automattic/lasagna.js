@@ -1,0 +1,18 @@
+name: CI
+
+on: [push]
+
+jobs:
+  unit_tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - run: npm ci
+
+      - name: TypeScript Check
+        run: npm run lint
+
+      - name: Jest Tests
+        run: npm test
