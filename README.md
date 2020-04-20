@@ -7,6 +7,7 @@ This client provides:
 - ⏩ Websocket Connectivity: keepin' it real(time).
 - 🧬 Multiplexing: one tube, myriad of topics.
 - 🗝️ JWT Auth Management: we reach out to you, you sign, we send.
+- 📘 TypeScript Types: to tell thee truth to thy tech.
 
 ## Getting Started
 
@@ -26,7 +27,7 @@ To run unit tests:
 npm test
 ```
 
-For a type-checking run:
+To run type-checking manually:
 
 ```
 npm run lint
