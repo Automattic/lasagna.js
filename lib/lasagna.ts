@@ -7,6 +7,7 @@ import { Channel, Socket } from "phoenix";
  * TS types
  */
 type Callback = () => any;
+type ChannelCbMap = { onClose?: Callback; onError?: Callback };
 type ChannelHandle = { channel: Channel; jwt: string; retries: number };
 type ChannelMap = { [topic: string]: ChannelHandle };
 type ChannelParams = { jwt?: string; [key: string]: any };
@@ -14,6 +15,11 @@ type ConnectParams = { jwt?: string; [key: string]: any };
 type Event = string;
 type GetJwtFn = (params: ConnectParams | ChannelParams) => string;
 type Payload = object;
+type SocketCbMap = {
+  onClose?: Callback;
+  onError?: Callback;
+  onOpen?: Callback;
+};
 type Topic = string;
 
 const LASAGNA_URL = "https://lasagna.pub/socket";
@@ -30,7 +36,7 @@ export default class Lasagna {
     this.#lasagnaUrl = lasagnaUrl || LASAGNA_URL;
   }
 
-  connect(params: ConnectParams) {
+  connect(params: ConnectParams, callbacks?: SocketCbMap) {
     const jwt = params.jwt || this.#getJwt(params);
 
     if (typeof "jwt" !== "string") {
@@ -38,26 +44,27 @@ export default class Lasagna {
     }
 
     this.#socket = new Socket(this.#lasagnaUrl, { params: { jwt } });
+
+    if (callbacks && callbacks.onOpen) {
+      this.#socket.onOpen(callbacks.onOpen);
+    }
+
+    if (callbacks && callbacks.onClose) {
+      this.#socket.onClose(callbacks.onClose);
+    }
+
+    if (callbacks && callbacks.onError) {
+      this.#socket.onError(callbacks.onError);
+    }
+
     this.#socket.connect();
-  }
-
-  onSocketOpen(callback: Callback) {
-    this.#socket?.onOpen(callback);
-  }
-
-  onSocketClose(callback: Callback) {
-    this.#socket?.onClose(callback);
-  }
-
-  onSocketError(callback: Callback) {
-    this.#socket?.onError(callback);
   }
 
   disconnect() {
     this.#socket?.disconnect();
   }
 
-  initChannel(topic: Topic, params: ChannelParams) {
+  initChannel(topic: Topic, params: ChannelParams, callbacks?: ChannelCbMap) {
     if (!this.#socket) {
       return false;
     }
@@ -66,8 +73,18 @@ export default class Lasagna {
       params.jwt = this.#getJwt(params);
     }
 
+    const channel = this.#socket.channel(topic, params);
+
+    if (callbacks && callbacks.onClose) {
+      channel.onClose(callbacks.onClose);
+    }
+
+    if (callbacks && callbacks.onError) {
+      channel.onError(callbacks.onError);
+    }
+
     this.CHANNELS[topic] = {
-      channel: this.#socket.channel(topic, params),
+      channel,
       jwt: params.jwt,
       retries: 0,
     };
@@ -77,14 +94,6 @@ export default class Lasagna {
 
   joinChannel(topic: Topic, callback: Callback = () => undefined) {
     this.CHANNELS[topic]?.channel.join().receive("ok", () => callback());
-  }
-
-  onChannelClose(topic: Topic, callback: Callback) {
-    this.CHANNELS[topic]?.channel.onClose(callback);
-  }
-
-  onChannelError(topic: Topic, callback: Callback) {
-    this.CHANNELS[topic]?.channel.onError(callback);
   }
 
   channelPush(topic: Topic, event: Event, payload: Payload) {

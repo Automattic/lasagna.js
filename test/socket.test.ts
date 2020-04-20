@@ -1,4 +1,10 @@
-import MockPhoenix, { mockConnect, mockDisconnect } from "./mocks/phoenix";
+import MockPhoenix, {
+  mockSocketConnect,
+  mockSocketOnOpen,
+  mockSocketOnClose,
+  mockSocketOnError,
+  mockSocketDisconnect,
+} from "./mocks/phoenix";
 jest.mock("phoenix", () => MockPhoenix);
 import Lasagna from "../lib/lasagna";
 
@@ -16,19 +22,37 @@ describe("Socket", () => {
     expect(MockPhoenix.Socket).toHaveBeenCalledWith(url, {
       params: { jwt: "faux-jwt-resp" },
     });
-    expect(mockConnect).toHaveBeenCalledTimes(1);
+    expect(mockSocketConnect).toHaveBeenCalledTimes(1);
   });
 
   test("connect/1 with jwt param", () => {
     const params = { jwt: "test" };
     lasagna.connect(params);
     expect(MockPhoenix.Socket).toHaveBeenCalledWith(url, { params });
-    expect(mockConnect).toHaveBeenCalledTimes(1);
+    expect(mockSocketConnect).toHaveBeenCalledTimes(1);
+  });
+
+  test("connect/1 with jwt param and callbacks", () => {
+    const params = { jwt: "test" };
+    const callbacks = {
+      onOpen: () => "yay!",
+      onClose: () => "aww",
+      onError: () => "doh",
+    };
+    lasagna.connect(params, callbacks);
+    expect(MockPhoenix.Socket).toHaveBeenCalledWith(url, { params });
+    expect(mockSocketOnOpen).toHaveBeenCalledTimes(1);
+    expect(mockSocketOnOpen).toHaveBeenCalledWith(callbacks.onOpen);
+    expect(mockSocketOnClose).toHaveBeenCalledTimes(1);
+    expect(mockSocketOnClose).toHaveBeenCalledWith(callbacks.onClose);
+    expect(mockSocketOnError).toHaveBeenCalledTimes(1);
+    expect(mockSocketOnError).toHaveBeenCalledWith(callbacks.onError);
+    expect(mockSocketConnect).toHaveBeenCalledTimes(1);
   });
 
   test("disconnect/0", () => {
     lasagna.connect({ jwt: "test" });
     lasagna.disconnect();
-    expect(mockDisconnect).toHaveBeenCalledTimes(1);
+    expect(mockSocketDisconnect).toHaveBeenCalledTimes(1);
   });
 });
