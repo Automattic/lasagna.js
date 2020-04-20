@@ -1,4 +1,9 @@
-import MockPhoenix, { mockJoin, mockLeave, mockPushFn } from "./mocks/phoenix";
+import MockPhoenix, {
+  mockChannelJoin,
+  mockChannelLeave,
+  mockChannelOn,
+  mockChannelPush,
+} from "./mocks/phoenix";
 jest.mock("phoenix", () => MockPhoenix);
 import Lasagna from "../lib/lasagna";
 
@@ -37,25 +42,32 @@ describe("Channel", () => {
 
   test("joinChannel/2", () => {
     lasagna.joinChannel("unit-test:thing1");
-    expect(mockJoin).toHaveBeenCalledTimes(1);
+    expect(mockChannelJoin).toHaveBeenCalledTimes(1);
   });
 
   test("joinChannel/2 with callback", () => {
     const cb = jest.fn().mockImplementation(() => "howdy!");
     lasagna.joinChannel("unit-test:thing1", cb);
-    expect(mockJoin).toHaveBeenCalledTimes(1);
+    expect(mockChannelJoin).toHaveBeenCalledTimes(1);
     expect(cb).toHaveBeenCalledTimes(1);
   });
 
   test("channelPush/3", () => {
-    lasagna.channelPush("unit-test:thing3", "new_sneech", { whatev: "stuff" });
-    expect(mockPushFn).toHaveBeenCalledTimes(1);
-    expect(mockPushFn).toHaveBeenCalledWith("new_sneech", { whatev: "stuff" });
+    lasagna.channelPush("unit-test:thing3", "new_sneech", { whatev: "a" });
+    expect(mockChannelPush).toHaveBeenCalledTimes(1);
+    expect(mockChannelPush).toHaveBeenCalledWith("new_sneech", { whatev: "a" });
+  });
+
+  test("registerEventHandler/2", () => {
+    const cb = () => "hola!";
+    lasagna.registerEventHandler("unit-test:thing3", "starred_sneech", cb);
+    expect(mockChannelOn).toHaveBeenCalledTimes(1);
+    expect(mockChannelOn).toHaveBeenCalledWith("starred_sneech", cb);
   });
 
   test("leaveChannel/0", () => {
     lasagna.leaveChannel("unit-test:thing3");
-    expect(mockLeave).toHaveBeenCalledTimes(1);
+    expect(mockChannelLeave).toHaveBeenCalledTimes(1);
     expect(lasagna.CHANNELS["unit-test:thing3"]).toBeUndefined();
   });
 });

@@ -91,6 +91,14 @@ export default class Lasagna {
     this.CHANNELS[topic]?.channel.push(event, payload);
   }
 
+  registerEventHandler(topic: Topic, event: Event, callback: Callback) {
+    return this.CHANNELS[topic]?.channel.on(event, callback);
+  }
+
+  unregisterEventHandler(topic: Topic, event: Event, ref: number) {
+    this.CHANNELS[topic]?.channel.off(event, ref);
+  }
+
   leaveChannel(topic: Topic) {
     this.CHANNELS[topic]?.channel.leave();
     delete this.CHANNELS[topic];
