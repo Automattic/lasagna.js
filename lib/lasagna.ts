@@ -20,14 +20,14 @@ const LASAGNA_URL = "https://lasagna.pub/socket";
 
 export default class Lasagna {
   CHANNELS: ChannelMap;
-  lasagnaUrl: string;
+  #lasagnaUrl: string;
   #getJwt: GetJwtFn;
   #socket?: Socket;
 
   constructor(getJwt: GetJwtFn, lasagnaUrl?: string) {
     this.CHANNELS = {};
     this.#getJwt = getJwt;
-    this.lasagnaUrl = lasagnaUrl || LASAGNA_URL;
+    this.#lasagnaUrl = lasagnaUrl || LASAGNA_URL;
   }
 
   connect(params: ConnectParams) {
@@ -37,7 +37,7 @@ export default class Lasagna {
       return false;
     }
 
-    this.#socket = new Socket(this.lasagnaUrl, { params: { jwt } });
+    this.#socket = new Socket(this.#lasagnaUrl, { params: { jwt } });
     this.#socket.connect();
   }
 

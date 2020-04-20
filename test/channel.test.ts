@@ -7,15 +7,25 @@ let lasagna: Lasagna;
 
 describe("Channel", () => {
   beforeEach(() => {
-    lasagna = new Lasagna(() => "unit-test", url);
+    lasagna = new Lasagna(() => "faux-jwt-resp", url);
     lasagna.connect({ remote: "stuff" });
     lasagna.initChannel("unit-test:thing1", { jwt: "yadayada" });
     lasagna.initChannel("unit-test:thing3", { jwt: "lololol" });
     lasagna.joinChannel("unit-test:thing3");
-    mockJoin.mockClear();
+    jest.clearAllMocks();
   });
 
-  test("initChannel/2", () => {
+  test("initChannel/2 without jwt param", () => {
+    lasagna.initChannel("unit-test:thing2", { private: "thingy" });
+
+    expect(lasagna.CHANNELS["unit-test:thing2"].channel).toBeDefined();
+    expect(lasagna.CHANNELS["unit-test:thing2"]).toMatchObject({
+      jwt: "faux-jwt-resp",
+      retries: 0,
+    });
+  });
+
+  test("initChannel/2 with jwt param", () => {
     lasagna.initChannel("unit-test:thing2", { jwt: "blahblah" });
 
     expect(lasagna.CHANNELS["unit-test:thing2"].channel).toBeDefined();

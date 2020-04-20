@@ -7,11 +7,16 @@ let lasagna: Lasagna;
 
 describe("Socket", () => {
   beforeEach(() => {
-    lasagna = new Lasagna(() => "unit-test", url);
+    lasagna = new Lasagna(() => "faux-jwt-resp", url);
+    jest.clearAllMocks();
   });
 
-  test("constructor/2", () => {
-    expect(lasagna.lasagnaUrl).toBe(url);
+  test("connect/1 without jwt param", () => {
+    lasagna.connect({ user_id: "dmte", email: "bob@example.com" });
+    expect(MockPhoenix.Socket).toHaveBeenCalledWith(url, {
+      params: { jwt: "faux-jwt-resp" },
+    });
+    expect(mockConnect).toHaveBeenCalledTimes(1);
   });
 
   test("connect/1 with jwt param", () => {
