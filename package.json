@@ -1,17 +1,18 @@
 {
-  "name": "lasagna",
+  "name": "@automattic/lasagna",
   "version": "0.1.0",
   "description": "lasagna.js, the reference client for the Lasagna web service",
   "main": "dist/lasagna.js",
   "types": "dist/lasagna.d.ts",
   "files": [
-    "dist/",
-    "lib/"
+    "dist/lib/lasagna.js",
+    "dist/lib/lasagna.js.map",
+    "dist/lib/lasagna.d.ts"
   ],
   "scripts": {
     "build": "tsc",
     "lint": "tslint -p tsconfig.json",
-    "prepublish": "npm run lint && npm test && npm build",
+    "prepare": "npm run lint && npm test && npm run build",
     "test": "jest"
   },
   "keywords": [
