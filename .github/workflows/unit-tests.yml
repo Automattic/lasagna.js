@@ -1,9 +1,9 @@
-name: CI
+name: unit_tests
 
 on: [push]
 
 jobs:
-  unit_tests:
+  run:
     runs-on: ubuntu-latest
 
     steps:
