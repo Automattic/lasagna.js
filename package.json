@@ -5,9 +5,9 @@
   "main": "dist/lasagna.js",
   "types": "dist/lasagna.d.ts",
   "files": [
-    "dist/lib/lasagna.js",
-    "dist/lib/lasagna.js.map",
-    "dist/lib/lasagna.d.ts"
+    "dist/lasagna.js",
+    "dist/lasagna.js.map",
+    "dist/lasagna.d.ts"
   ],
   "scripts": {
     "build": "tsc",
