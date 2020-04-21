@@ -13,39 +13,39 @@ let lasagna: Lasagna;
 
 describe("Socket", () => {
   beforeEach(() => {
-    lasagna = new Lasagna(() => "faux-jwt-resp", url);
+    lasagna = new Lasagna(() => Promise.resolve("faux-jwt-resp"), url);
     jest.clearAllMocks();
   });
 
-  test("connect/1 without jwt param", () => {
-    lasagna.connect({ user_id: "dmte", email: "bob@example.com" });
+  test("connect/1 without jwt param", async () => {
+    await lasagna.connect({ user_id: "dmte", email: "bob@example.com" });
     expect(MockPhoenix.Socket).toHaveBeenCalledWith(url, {
       params: { jwt: "faux-jwt-resp" },
     });
     expect(mockSocketConnect).toHaveBeenCalledTimes(1);
   });
 
-  test("connect/1 with jwt param", () => {
+  test("connect/1 with jwt param", async () => {
     const params = { jwt: "test" };
-    lasagna.connect(params);
+    await lasagna.connect(params);
     expect(MockPhoenix.Socket).toHaveBeenCalledWith(url, { params });
     expect(mockSocketConnect).toHaveBeenCalledTimes(1);
   });
 
-  test("connect/1 with bad jwt param", () => {
+  test("connect/1 with bad jwt param", async () => {
     // @ts-ignore: type mismatch
-    expect(lasagna.connect({ jwt: [] })).toBe(false);
+    expect(await lasagna.connect({ jwt: [] })).toBe(false);
     expect(MockPhoenix.Socket).toHaveBeenCalledTimes(0);
   });
 
-  test("connect/1 with jwt param and callbacks", () => {
+  test("connect/1 with jwt param and callbacks", async () => {
     const params = { jwt: "test" };
     const callbacks = {
       onOpen: () => "yay!",
       onClose: () => "aww",
       onError: () => "doh",
     };
-    lasagna.connect(params, callbacks);
+    await lasagna.connect(params, callbacks);
     expect(MockPhoenix.Socket).toHaveBeenCalledWith(url, { params });
     expect(mockSocketOnOpen).toHaveBeenCalledTimes(1);
     expect(mockSocketOnOpen).toHaveBeenCalledWith(callbacks.onOpen);
@@ -56,8 +56,8 @@ describe("Socket", () => {
     expect(mockSocketConnect).toHaveBeenCalledTimes(1);
   });
 
-  test("disconnect/0", () => {
-    lasagna.connect({ jwt: "test" });
+  test("disconnect/0", async () => {
+    await lasagna.connect({ jwt: "test" });
     lasagna.disconnect();
     expect(mockSocketDisconnect).toHaveBeenCalledTimes(1);
   });

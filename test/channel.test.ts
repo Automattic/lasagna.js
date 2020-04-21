@@ -13,17 +13,17 @@ const testJwt =
 let lasagna: Lasagna;
 
 describe("Channel", () => {
-  beforeEach(() => {
-    lasagna = new Lasagna(() => testJwt, url);
-    lasagna.connect({ remote: "stuff" });
-    lasagna.initChannel("unit-test:thing1", { jwt: "yadayada" });
-    lasagna.initChannel("unit-test:thing3", { jwt: "lololol" });
+  beforeEach(async () => {
+    lasagna = new Lasagna(() => Promise.resolve(testJwt), url);
+    await lasagna.connect({ remote: "stuff" });
+    await lasagna.initChannel("unit-test:thing1", { jwt: "yadayada" });
+    await lasagna.initChannel("unit-test:thing3", { jwt: "lololol" });
     lasagna.joinChannel("unit-test:thing3");
     jest.clearAllMocks();
   });
 
-  test("initChannel/2 without jwt param", () => {
-    lasagna.initChannel("unit-test:thing2", { private: "thingy" });
+  test("initChannel/2 without jwt param", async () => {
+    await lasagna.initChannel("unit-test:thing2", { private: "thingy" });
 
     expect(lasagna.CHANNELS["unit-test:thing2"].channel).toBeDefined();
     expect(lasagna.CHANNELS["unit-test:thing2"]).toMatchObject({
@@ -34,7 +34,7 @@ describe("Channel", () => {
     });
   });
 
-  test("initChannel/2 with jwt param", () => {
+  test("initChannel/2 with jwt param", async () => {
     lasagna.initChannel("unit-test:thing2", { jwt: "blahblah" });
 
     expect(lasagna.CHANNELS["unit-test:thing2"].channel).toBeDefined();
