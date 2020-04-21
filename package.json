@@ -25,6 +25,13 @@
   "author": "Automattic, Inc",
   "license": "MIT",
   "repository": "https://github.com/Automattic/lasagna.js.git",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "jwt-decode": "^2.2.0",
+    "phoenix": "^1.4.16"
+  },
   "devDependencies": {
     "@types/jest": "^25.2.1",
     "@types/jwt-decode": "^2.2.1",
@@ -33,9 +40,5 @@
     "ts-jest": "^25.4.0",
     "tslint": "^6.1.1",
     "typescript": "^3.8.3"
-  },
-  "dependencies": {
-    "jwt-decode": "^2.2.0",
-    "phoenix": "^1.4.16"
   }
 }
