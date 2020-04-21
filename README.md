@@ -12,7 +12,7 @@ This client provides:
 ## Getting Started
 
 1. `npm install @automattic/lasagna`
-2. `import Lasagna from '@automattic/lasagna`
+2. `import Lasagna from '@automattic/lasagna'`
 3. `const lasagna = new Lasagna( myJwtFetcherCallback )`;
 
 ## Contributing
