@@ -1,6 +1,6 @@
 {
   "name": "@automattic/lasagna",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "lasagna.js, the reference client for the Lasagna web service",
   "main": "dist/lasagna.js",
   "types": "dist/lasagna.d.ts",
