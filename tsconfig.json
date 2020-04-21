@@ -2,12 +2,13 @@
   "compilerOptions": {
     "declaration": true,
     "esModuleInterop": true,
-    "module": "UMD",
+    "lib": ["es2015"],
+    "module": "es6",
     "moduleResolution": "node",
     "outDir": "dist",
     "sourceMap": true,
     "strict": true,
-    "target": "es6"
+    "target": "es2015"
   },
-  "lib": ["es2015"]
+  "include": ["lib/**/*"]
 }

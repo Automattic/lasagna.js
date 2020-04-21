@@ -1,15 +1,18 @@
 {
-  "name": "lasagna",
+  "name": "@automattic/lasagna",
   "version": "0.1.0",
-  "description": "lasagna.js, the reference client for the Lasagna service",
-  "main": "dist/lasagna.ts",
+  "description": "lasagna.js, the reference client for the Lasagna web service",
+  "main": "dist/lasagna.js",
   "types": "dist/lasagna.d.ts",
   "files": [
-    "lib/"
+    "dist/lib/lasagna.js",
+    "dist/lib/lasagna.js.map",
+    "dist/lib/lasagna.d.ts"
   ],
   "scripts": {
     "build": "tsc",
     "lint": "tslint -p tsconfig.json",
+    "prepare": "npm run lint && npm test && npm run build",
     "test": "jest"
   },
   "keywords": [
@@ -21,16 +24,18 @@
   ],
   "author": "Automattic, Inc",
   "license": "MIT",
+  "repository": "https://github.com/Automattic/lasagna.js.git",
   "devDependencies": {
     "@types/jest": "^25.2.1",
+    "@types/jwt-decode": "^2.2.1",
     "@types/phoenix": "^1.4.4",
     "jest": "^25.4.0",
-    "nock": "^12.0.3",
     "ts-jest": "^25.4.0",
     "tslint": "^6.1.1",
     "typescript": "^3.8.3"
   },
   "dependencies": {
+    "jwt-decode": "^2.2.0",
     "phoenix": "^1.4.16"
   }
 }

@@ -32,6 +32,12 @@ describe("Socket", () => {
     expect(mockSocketConnect).toHaveBeenCalledTimes(1);
   });
 
+  test("connect/1 with bad jwt param", () => {
+    // @ts-ignore: type mismatch
+    expect(lasagna.connect({ jwt: [] })).toBe(false);
+    expect(MockPhoenix.Socket).toHaveBeenCalledTimes(0);
+  });
+
   test("connect/1 with jwt param and callbacks", () => {
     const params = { jwt: "test" };
     const callbacks = {

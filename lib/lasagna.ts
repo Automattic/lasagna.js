@@ -2,16 +2,25 @@
  * External dependencies
  */
 import { Channel, Socket } from "phoenix";
+import JWT from "jwt-decode";
 
 /**
  * TS types
  */
 type Callback = () => any;
 type ChannelCbMap = { onClose?: Callback; onError?: Callback };
-type ChannelHandle = { channel: Channel; jwt: string; retries: number };
+type ChannelHandle = {
+  callbacks: ChannelCbMap | undefined;
+  channel: Channel;
+  jwt_exp: number;
+  params: ChannelParams;
+  retries: number;
+  topic: Topic;
+};
 type ChannelMap = { [topic: string]: ChannelHandle };
 type ChannelParams = { jwt?: string; [key: string]: any };
 type ConnectParams = { jwt?: string; [key: string]: any };
+type DecodedJWT = { exp: number; iat: number; iss: string };
 type Event = string;
 type GetJwtFn = (params: ConnectParams | ChannelParams) => string;
 type Payload = object;
@@ -22,7 +31,7 @@ type SocketCbMap = {
 };
 type Topic = string;
 
-const LASAGNA_URL = "https://lasagna.pub/socket";
+const LASAGNA_URL = "wss://lasagna.pub/socket";
 
 export default class Lasagna {
   CHANNELS: ChannelMap;
@@ -36,10 +45,14 @@ export default class Lasagna {
     this.#lasagnaUrl = lasagnaUrl || LASAGNA_URL;
   }
 
+  /**
+   * Socket
+   */
+
   connect(params: ConnectParams, callbacks?: SocketCbMap) {
     const jwt = params.jwt || this.#getJwt(params);
 
-    if (typeof "jwt" !== "string") {
+    if (typeof jwt !== "string" || jwt === "") {
       return false;
     }
 
@@ -64,6 +77,10 @@ export default class Lasagna {
     this.#socket?.disconnect();
   }
 
+  /**
+   * Channel
+   */
+
   initChannel(topic: Topic, params: ChannelParams, callbacks?: ChannelCbMap) {
     if (!this.#socket) {
       return false;
@@ -84,8 +101,11 @@ export default class Lasagna {
     }
 
     this.CHANNELS[topic] = {
+      callbacks,
       channel,
-      jwt: params.jwt,
+      params,
+      topic,
+      jwt_exp: this.#getJwtExp(params.jwt),
       retries: 0,
     };
 
@@ -93,7 +113,15 @@ export default class Lasagna {
   }
 
   joinChannel(topic: Topic, callback: Callback = () => undefined) {
-    this.CHANNELS[topic]?.channel.join().receive("ok", () => callback());
+    if (!this.CHANNELS[topic]) {
+      return false;
+    }
+
+    if (this.#shouldRefreshJwt(this.CHANNELS[topic].jwt_exp)) {
+      this.#refreshChannel(this.CHANNELS[topic]);
+    }
+
+    this.CHANNELS[topic].channel.join().receive("ok", () => callback());
   }
 
   channelPush(topic: Topic, event: Event, payload: Payload) {
@@ -112,4 +140,28 @@ export default class Lasagna {
     this.CHANNELS[topic]?.channel.leave();
     delete this.CHANNELS[topic];
   }
+
+  /**
+   * Private methods
+   */
+
+  #getJwtExp = (jwt: string) => {
+    let jwtExp;
+
+    try {
+      const decodedJwt: DecodedJWT = JWT(jwt);
+      jwtExp = decodedJwt.exp * 1000;
+    } catch {
+      jwtExp = 0;
+    }
+
+    return jwtExp;
+  };
+
+  #shouldRefreshJwt = (jwtExp: number) => Date.now() >= jwtExp;
+
+  #refreshChannel = ({ topic, params, callbacks }: ChannelHandle) => {
+    delete params.jwt;
+    this.initChannel(topic, params, callbacks);
+  };
 }
