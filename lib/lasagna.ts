@@ -8,9 +8,9 @@ import JWT from "jwt-decode";
  * TS types
  */
 type Callback = () => any;
-type ChannelCbMap = { onClose?: Callback; onError?: Callback };
+type ChannelCbs = { onClose?: Callback; onError?: Callback };
 type ChannelHandle = {
-  callbacks: ChannelCbMap | undefined;
+  callbacks: ChannelCbs | undefined;
   channel: Channel;
   jwt_exp: number;
   params: Params;
@@ -20,11 +20,14 @@ type ChannelHandle = {
 type ChannelMap = { [topic: string]: ChannelHandle };
 type DecodedJWT = { exp: number; iat: number; iss: string };
 type Event = string;
-type GetJwtFn = (type: "socket" | "channel", meta: GetJwtFnMetaParam) => string;
+type GetJwtFn = (
+  type: "socket" | "channel",
+  meta: GetJwtFnMetaParam
+) => Promise<string>;
 type GetJwtFnMetaParam = { params: Params; topic?: Topic };
 type Params = { jwt?: string; [key: string]: any };
 type Payload = object;
-type SocketCbMap = {
+type SocketCbs = {
   onClose?: Callback;
   onError?: Callback;
   onOpen?: Callback;
@@ -49,8 +52,8 @@ export default class Lasagna {
    * Socket
    */
 
-  connect(params: Params = {}, callbacks?: SocketCbMap) {
-    const jwt = params.jwt || this.#getJwt("socket", { params });
+  async connect(params: Params = {}, callbacks?: SocketCbs) {
+    const jwt = params.jwt || (await this.#getJwt("socket", { params }));
 
     if (typeof jwt !== "string" || jwt === "") {
       return false;
@@ -81,13 +84,13 @@ export default class Lasagna {
    * Channel
    */
 
-  initChannel(topic: Topic, params: Params = {}, callbacks?: ChannelCbMap) {
+  async initChannel(topic: Topic, params: Params = {}, callbacks?: ChannelCbs) {
     if (!this.#socket) {
       return false;
     }
 
     if (!params.jwt) {
-      params.jwt = this.#getJwt("channel", { params, topic });
+      params.jwt = await this.#getJwt("channel", { params, topic });
     }
 
     if (typeof params.jwt !== "string" || params.jwt === "") {
@@ -112,8 +115,6 @@ export default class Lasagna {
       jwt_exp: this.#getJwtExp(params.jwt),
       retries: 0,
     };
-
-    return topic;
   }
 
   joinChannel(topic: Topic, callback: Callback = () => undefined) {
