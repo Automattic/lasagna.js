@@ -10,7 +10,8 @@
     "dist/lasagna.d.ts"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "npm run clean && tsc",
+    "clean": "npx rimraf dist",
     "lint": "tslint -p tsconfig.json",
     "prepare": "npm run lint && npm test && npm run build",
     "test": "jest"
@@ -37,6 +38,7 @@
     "@types/jwt-decode": "^2.2.1",
     "@types/phoenix": "^1.4.4",
     "jest": "^25.4.0",
+    "rimraf": "^3.0.2",
     "ts-jest": "^25.4.0",
     "tslint": "^6.1.1",
     "typescript": "^3.8.3"
