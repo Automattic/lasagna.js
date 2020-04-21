@@ -2,8 +2,8 @@
   "name": "@automattic/lasagna",
   "version": "0.1.0",
   "description": "lasagna.js, the reference client for the Lasagna web service",
-  "main": "dist/lib/lasagna.js",
-  "types": "dist/lib/lasagna.d.ts",
+  "main": "dist/lasagna.js",
+  "types": "dist/lasagna.d.ts",
   "files": [
     "dist/lib/lasagna.js",
     "dist/lib/lasagna.js.map",
