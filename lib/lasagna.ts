@@ -13,16 +13,16 @@ type ChannelHandle = {
   callbacks: ChannelCbMap | undefined;
   channel: Channel;
   jwt_exp: number;
-  params: ChannelParams;
+  params: Params;
   retries: number;
   topic: Topic;
 };
 type ChannelMap = { [topic: string]: ChannelHandle };
-type ChannelParams = { jwt?: string; [key: string]: any };
-type ConnectParams = { jwt?: string; [key: string]: any };
 type DecodedJWT = { exp: number; iat: number; iss: string };
 type Event = string;
-type GetJwtFn = (params: ConnectParams | ChannelParams) => string;
+type GetJwtFn = (type: "socket" | "channel", meta: GetJwtFnMetaParam) => string;
+type GetJwtFnMetaParam = { params: Params; topic?: Topic };
+type Params = { jwt?: string; [key: string]: any };
 type Payload = object;
 type SocketCbMap = {
   onClose?: Callback;
@@ -49,8 +49,8 @@ export default class Lasagna {
    * Socket
    */
 
-  connect(params: ConnectParams, callbacks?: SocketCbMap) {
-    const jwt = params.jwt || this.#getJwt(params);
+  connect(params: Params = {}, callbacks?: SocketCbMap) {
+    const jwt = params.jwt || this.#getJwt("socket", { params });
 
     if (typeof jwt !== "string" || jwt === "") {
       return false;
@@ -81,13 +81,17 @@ export default class Lasagna {
    * Channel
    */
 
-  initChannel(topic: Topic, params: ChannelParams, callbacks?: ChannelCbMap) {
+  initChannel(topic: Topic, params: Params = {}, callbacks?: ChannelCbMap) {
     if (!this.#socket) {
       return false;
     }
 
     if (!params.jwt) {
-      params.jwt = this.#getJwt(params);
+      params.jwt = this.#getJwt("channel", { params, topic });
+    }
+
+    if (typeof params.jwt !== "string" || params.jwt === "") {
+      return false;
     }
 
     const channel = this.#socket.channel(topic, params);
