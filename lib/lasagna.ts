@@ -52,7 +52,7 @@ export default class Lasagna {
   connect(params: ConnectParams, callbacks?: SocketCbMap) {
     const jwt = params.jwt || this.#getJwt(params);
 
-    if (typeof "jwt" !== "string") {
+    if (typeof jwt !== "string" || jwt === "") {
       return false;
     }
 
