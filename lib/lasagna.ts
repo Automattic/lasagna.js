@@ -31,7 +31,7 @@ type SocketCbMap = {
 };
 type Topic = string;
 
-const LASAGNA_URL = "https://lasagna.pub/socket";
+const LASAGNA_URL = "wss://lasagna.pub/socket";
 
 export default class Lasagna {
   CHANNELS: ChannelMap;
