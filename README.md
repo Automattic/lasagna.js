@@ -7,11 +7,13 @@ This client provides:
 - ⏩ Websocket Connectivity: keepin' it real(time).
 - 🧬 Multiplexing: one tube, myriad of topics.
 - 🗝️ JWT Auth Management: we reach out to you, you sign, we send.
-- 📘 TypeScript Types: to tell thee truth to thy tech.
+- 📘 TypeScript Types: to tell thee truth to thy terminal.
 
 ## Getting Started
 
-TBD
+1. `npm install @automattic/lasagna`
+2. `import Lasagna from '@automattic/lasagna`
+3. `const lasagna = new Lasagna( myJwtFetcherCallback )`;
 
 ## Contributing
 
