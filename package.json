@@ -31,7 +31,7 @@
   },
   "dependencies": {
     "jwt-decode": "^2.2.0",
-    "phoenix": "^1.4.16"
+    "phoenix": "^1.5.0"
   },
   "devDependencies": {
     "@types/jest": "^25.2.1",
