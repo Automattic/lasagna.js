@@ -3,6 +3,7 @@
  */
 import MockPhoenix, {
   mockSocketConnect,
+  mockSocketIsConnected,
   mockSocketOnOpen,
   mockSocketOnClose,
   mockSocketOnError,
@@ -64,6 +65,12 @@ describe("Socket", () => {
     expect(mockSocketOnError).toHaveBeenCalledTimes(1);
     expect(mockSocketOnError).toHaveBeenCalledWith(expect.any(Function));
     expect(mockSocketConnect).toHaveBeenCalledTimes(1);
+  });
+
+  test("isConnected/0", async () => {
+    await lasagna.initSocket({ jwt: "test" });
+    lasagna.isConnected();
+    expect(mockSocketIsConnected).toHaveBeenCalledTimes(1);
   });
 
   test("disconnect/0", async () => {

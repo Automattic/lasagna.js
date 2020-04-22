@@ -83,6 +83,10 @@ export default class Lasagna {
     this.#socket?.connect();
   }
 
+  isConnected() {
+    this.#socket?.isConnected();
+  }
+
   disconnect() {
     this.#socket?.disconnect();
     this.#socket = undefined;
