@@ -48,6 +48,11 @@ describe("Socket", () => {
     expect(MockPhoenix.Socket).toHaveBeenCalledTimes(0);
   });
 
+  test("initSocket/1 with bad fetcher response", async () => {
+    const burntLasagna = new Lasagna(() => Promise.resolve(""), url);
+    expect(await burntLasagna.initSocket()).toBe(false);
+  });
+
   test("initSocket/1 with jwt param and callbacks", async () => {
     const params = { jwt: "test" };
     const callbacks = {

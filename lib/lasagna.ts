@@ -128,7 +128,7 @@ export default class Lasagna {
     };
   }
 
-  joinChannel(topic: Topic, callback: Callback = () => undefined) {
+  async joinChannel(topic: Topic, callback: Callback = () => undefined) {
     if (!this.CHANNELS[topic]) {
       return false;
     }
@@ -136,7 +136,7 @@ export default class Lasagna {
     const jwt = this.CHANNELS[topic].params.jwt;
 
     if (!jwt || this.#shouldRefreshJwt(jwt)) {
-      this.#refreshChannel(this.CHANNELS[topic]);
+      await this.#refreshChannel(this.CHANNELS[topic]);
     }
 
     this.CHANNELS[topic].channel.join().receive("ok", () => callback());
