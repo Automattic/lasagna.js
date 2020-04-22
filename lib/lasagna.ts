@@ -174,16 +174,16 @@ export default class Lasagna {
 
   #shouldRefreshJwt = (jwt: string) => Date.now() >= this.#getJwtExp(jwt);
 
-  #reconnectSocket = (params: Params, callbacks?: SocketCbs) => {
+  #reconnectSocket = async (params: Params, callbacks?: SocketCbs) => {
     this.disconnect();
     delete params.jwt;
-    this.initSocket(params, callbacks);
+    await this.initSocket(params, callbacks);
     this.connect();
   };
 
-  #refreshChannel = ({ topic, params, callbacks }: ChannelHandle) => {
+  #refreshChannel = async ({ topic, params, callbacks }: ChannelHandle) => {
     this.leaveChannel(topic);
     delete params.jwt;
-    this.initChannel(topic, params, callbacks);
+    await this.initChannel(topic, params, callbacks);
   };
 }
