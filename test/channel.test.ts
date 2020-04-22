@@ -15,16 +15,16 @@ import Lasagna from "../lib/lasagna";
  */
 describe("Channel", () => {
   const url = "http://unit-test.local";
-  const testJwtExpYr1999 =
+  const jwtExpired =
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0Ijo5MjQ3OTA2NTgsImV4cCI6OTI0NzkxNjU4fQ.iwZ26LyWfUjWK09Z0Z7bbkw6y8J2_hODsIgUU-HYh3k";
-  const testJwtExpYr8000 =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTg3NTY2MTM4LCJleHAiOjE5MDI5ODEyNjA1OH0.prqRY4pl4Q0C3R73ZKCAx5KwAEYc-DMDsKDvLHV-sx4";
-  const testJwtExpYr9000 =
+  const jwtExplicitPassed =
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTg3NTY2MTM4LCJleHAiOjIyMTg1NTAzNjg4OH0.A1fxARHsTBcjJez9MEDrqm8xC3ypasfAGBTl1A64sD0";
+  const jwtRemoteFetched =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTg3NTY2MTM4LCJleHAiOjE5MDI5ODEyNjA1OH0.prqRY4pl4Q0C3R73ZKCAx5KwAEYc-DMDsKDvLHV-sx4";
   let lasagna: Lasagna;
 
   beforeEach(async () => {
-    lasagna = new Lasagna(() => Promise.resolve(testJwtExpYr8000), url);
+    lasagna = new Lasagna(() => Promise.resolve(jwtRemoteFetched), url);
     await lasagna.initSocket({ remote: "stuff" });
     await lasagna.initChannel("unit-test:thing1", { jwt: "yadayada" });
     await lasagna.initChannel("unit-test:thing3", { jwt: "lololol" });
@@ -38,29 +38,29 @@ describe("Channel", () => {
 
     expect(lasagna.CHANNELS["unit-test:thing2"].channel).toBeDefined();
     expect(lasagna.CHANNELS["unit-test:thing2"]).toMatchObject({
-      params: { jwt: testJwtExpYr8000, private: "thingy" },
+      params: { jwt: jwtRemoteFetched, private: "thingy" },
       topic: "unit-test:thing2",
       retries: 0,
     });
   });
 
   test("initChannel/2 with jwt param", async () => {
-    await lasagna.initChannel("unit-test:thing2", { jwt: testJwtExpYr9000 });
+    await lasagna.initChannel("unit-test:thing2", { jwt: jwtExplicitPassed });
 
     expect(lasagna.CHANNELS["unit-test:thing2"].channel).toBeDefined();
     expect(lasagna.CHANNELS["unit-test:thing2"]).toMatchObject({
-      params: { jwt: testJwtExpYr9000 },
+      params: { jwt: jwtExplicitPassed },
       topic: "unit-test:thing2",
       retries: 0,
     });
   });
 
   test("initChannel/2 with expired jwt param", async () => {
-    await lasagna.initChannel("unit-test:thing2", { jwt: testJwtExpYr1999 });
+    await lasagna.initChannel("unit-test:thing2", { jwt: jwtExpired });
 
     expect(lasagna.CHANNELS["unit-test:thing2"].channel).toBeDefined();
     expect(lasagna.CHANNELS["unit-test:thing2"]).toMatchObject({
-      params: { jwt: testJwtExpYr8000 },
+      params: { jwt: jwtRemoteFetched },
       topic: "unit-test:thing2",
       retries: 0,
     });
@@ -71,7 +71,7 @@ describe("Channel", () => {
 
     expect(lasagna.CHANNELS["unit-test:thing2"].channel).toBeDefined();
     expect(lasagna.CHANNELS["unit-test:thing2"]).toMatchObject({
-      params: { jwt: testJwtExpYr8000 },
+      params: { jwt: jwtRemoteFetched },
       topic: "unit-test:thing2",
       retries: 0,
     });
