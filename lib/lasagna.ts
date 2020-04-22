@@ -12,7 +12,6 @@ type ChannelCbs = { onClose?: Callback; onError?: Callback };
 type ChannelHandle = {
   callbacks: ChannelCbs | undefined;
   channel: Channel;
-  jwt_exp: number;
   params: Params;
   retries: number;
   topic: Topic;
@@ -52,7 +51,7 @@ export default class Lasagna {
    * Socket
    */
 
-  async connect(params: Params = {}, callbacks?: SocketCbs) {
+  async initSocket(params: Params = {}, callbacks?: SocketCbs) {
     const jwt = params.jwt || (await this.#getJwt("socket", { params }));
 
     if (typeof jwt !== "string" || jwt === "") {
@@ -69,15 +68,24 @@ export default class Lasagna {
       this.#socket.onClose(callbacks.onClose);
     }
 
-    if (callbacks && callbacks.onError) {
-      this.#socket.onError(callbacks.onError);
-    }
+    this.#socket.onError(() => {
+      if (callbacks && callbacks.onError) {
+        callbacks.onError();
+      }
 
-    this.#socket.connect();
+      if (this.#shouldRefreshJwt(jwt)) {
+        this.#reconnectSocket(params, callbacks);
+      }
+    });
+  }
+
+  connect() {
+    this.#socket?.connect();
   }
 
   disconnect() {
     this.#socket?.disconnect();
+    this.#socket = undefined;
   }
 
   /**
@@ -89,7 +97,7 @@ export default class Lasagna {
       return false;
     }
 
-    if (!params.jwt) {
+    if (!params.jwt || this.#shouldRefreshJwt(params.jwt)) {
       params.jwt = await this.#getJwt("channel", { params, topic });
     }
 
@@ -112,7 +120,6 @@ export default class Lasagna {
       channel,
       params,
       topic,
-      jwt_exp: this.#getJwtExp(params.jwt),
       retries: 0,
     };
   }
@@ -122,7 +129,9 @@ export default class Lasagna {
       return false;
     }
 
-    if (this.#shouldRefreshJwt(this.CHANNELS[topic].jwt_exp)) {
+    const jwt = this.CHANNELS[topic].params.jwt;
+
+    if (!jwt || this.#shouldRefreshJwt(jwt)) {
       this.#refreshChannel(this.CHANNELS[topic]);
     }
 
@@ -163,9 +172,17 @@ export default class Lasagna {
     return jwtExp;
   };
 
-  #shouldRefreshJwt = (jwtExp: number) => Date.now() >= jwtExp;
+  #shouldRefreshJwt = (jwt: string) => Date.now() >= this.#getJwtExp(jwt);
+
+  #reconnectSocket = (params: Params, callbacks?: SocketCbs) => {
+    this.disconnect();
+    delete params.jwt;
+    this.initSocket(params, callbacks);
+    this.connect();
+  };
 
   #refreshChannel = ({ topic, params, callbacks }: ChannelHandle) => {
+    this.leaveChannel(topic);
     delete params.jwt;
     this.initChannel(topic, params, callbacks);
   };
