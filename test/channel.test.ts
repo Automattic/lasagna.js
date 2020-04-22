@@ -1,3 +1,6 @@
+/**
+ * Mocks
+ */
 import MockPhoenix, {
   mockChannelJoin,
   mockChannelLeave,
@@ -7,17 +10,25 @@ import MockPhoenix, {
 jest.mock("phoenix", () => MockPhoenix);
 import Lasagna from "../lib/lasagna";
 
-const url = "http://unit-test.local";
-const testJwt =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1MTYyNDkwMjJ9.yhajB9YVkJKfPgly4pm2Kizmto0xXdC50-URV3g9eno";
-let lasagna: Lasagna;
-
+/**
+ * Test
+ */
 describe("Channel", () => {
+  const url = "http://unit-test.local";
+  const jwtExpired =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0Ijo5MjQ3OTA2NTgsImV4cCI6OTI0NzkxNjU4fQ.iwZ26LyWfUjWK09Z0Z7bbkw6y8J2_hODsIgUU-HYh3k";
+  const jwtExplicitPassed =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTg3NTY2MTM4LCJleHAiOjIyMTg1NTAzNjg4OH0.A1fxARHsTBcjJez9MEDrqm8xC3ypasfAGBTl1A64sD0";
+  const jwtRemoteFetched =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTg3NTY2MTM4LCJleHAiOjE5MDI5ODEyNjA1OH0.prqRY4pl4Q0C3R73ZKCAx5KwAEYc-DMDsKDvLHV-sx4";
+  let lasagna: Lasagna;
+
   beforeEach(async () => {
-    lasagna = new Lasagna(() => Promise.resolve(testJwt), url);
-    await lasagna.connect({ remote: "stuff" });
-    await lasagna.initChannel("unit-test:thing1", { jwt: "yadayada" });
-    await lasagna.initChannel("unit-test:thing3", { jwt: "lololol" });
+    lasagna = new Lasagna(() => Promise.resolve(jwtRemoteFetched), url);
+    await lasagna.initSocket({ remote: "stuff" });
+    await lasagna.initChannel("unit-test:thing1");
+    await lasagna.initChannel("unit-test:thing3", { jwt: jwtExplicitPassed });
+    lasagna.connect();
     lasagna.joinChannel("unit-test:thing3");
     jest.clearAllMocks();
   });
@@ -27,23 +38,48 @@ describe("Channel", () => {
 
     expect(lasagna.CHANNELS["unit-test:thing2"].channel).toBeDefined();
     expect(lasagna.CHANNELS["unit-test:thing2"]).toMatchObject({
-      params: { jwt: testJwt, private: "thingy" },
+      params: { jwt: jwtRemoteFetched, private: "thingy" },
       topic: "unit-test:thing2",
-      jwt_exp: 1516249022000,
       retries: 0,
     });
   });
 
   test("initChannel/2 with jwt param", async () => {
-    lasagna.initChannel("unit-test:thing2", { jwt: "blahblah" });
+    await lasagna.initChannel("unit-test:thing2", { jwt: jwtExplicitPassed });
 
     expect(lasagna.CHANNELS["unit-test:thing2"].channel).toBeDefined();
     expect(lasagna.CHANNELS["unit-test:thing2"]).toMatchObject({
-      params: { jwt: "blahblah" },
+      params: { jwt: jwtExplicitPassed },
       topic: "unit-test:thing2",
-      jwt_exp: 0, // expected! because bad JWT
       retries: 0,
     });
+  });
+
+  test("initChannel/2 with expired jwt param", async () => {
+    await lasagna.initChannel("unit-test:thing2", { jwt: jwtExpired });
+
+    expect(lasagna.CHANNELS["unit-test:thing2"].channel).toBeDefined();
+    expect(lasagna.CHANNELS["unit-test:thing2"]).toMatchObject({
+      params: { jwt: jwtRemoteFetched },
+      topic: "unit-test:thing2",
+      retries: 0,
+    });
+  });
+
+  test("initChannel/2 with malformed jwt param", async () => {
+    await lasagna.initChannel("unit-test:thing2", { jwt: "blahblah" });
+
+    expect(lasagna.CHANNELS["unit-test:thing2"].channel).toBeDefined();
+    expect(lasagna.CHANNELS["unit-test:thing2"]).toMatchObject({
+      params: { jwt: jwtRemoteFetched },
+      topic: "unit-test:thing2",
+      retries: 0,
+    });
+  });
+
+  test("initChannel/2 with no socket", async () => {
+    const burntLasagna = new Lasagna(() => Promise.resolve("whatever"), url);
+    expect(await burntLasagna.initChannel("unit-test:thing5")).toBe(false);
   });
 
   test("joinChannel/2", () => {
@@ -56,6 +92,24 @@ describe("Channel", () => {
     lasagna.joinChannel("unit-test:thing1", cb);
     expect(mockChannelJoin).toHaveBeenCalledTimes(1);
     expect(cb).toHaveBeenCalledTimes(1);
+  });
+
+  test("joinChannel/2 with forced channel refresh", async () => {
+    delete lasagna.CHANNELS["unit-test:thing1"].params.jwt;
+    await lasagna.joinChannel("unit-test:thing1");
+
+    expect(mockChannelJoin).toHaveBeenCalledTimes(1);
+    expect(lasagna.CHANNELS["unit-test:thing1"].channel).toBeDefined();
+    expect(lasagna.CHANNELS["unit-test:thing1"]).toMatchObject({
+      params: { jwt: jwtRemoteFetched },
+      topic: "unit-test:thing1",
+      retries: 0,
+    });
+  });
+
+  test("joinChannel/2 with unexpected ChannelMap corruption", async () => {
+    delete lasagna.CHANNELS["unit-test:thing1"];
+    expect(await lasagna.joinChannel("unit-test:thing1")).toBe(false);
   });
 
   test("channelPush/3", () => {
