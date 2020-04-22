@@ -38,6 +38,7 @@
     "@types/jwt-decode": "^2.2.1",
     "@types/phoenix": "^1.4.4",
     "jest": "^25.4.0",
+    "parcel-bundler": "^1.12.4",
     "rimraf": "^3.0.2",
     "ts-jest": "^25.4.0",
     "tslint": "^6.1.1",
