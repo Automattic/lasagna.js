@@ -74,7 +74,7 @@ describe("Socket", () => {
 
   test("isConnected/0", async () => {
     await lasagna.initSocket({ jwt: "test" });
-    lasagna.isConnected();
+    expect(lasagna.isConnected()).toBe(true);
     expect(mockSocketIsConnected).toHaveBeenCalledTimes(1);
   });
 

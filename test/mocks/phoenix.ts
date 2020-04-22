@@ -1,6 +1,6 @@
 export const mockSocketConnect = jest.fn();
 export const mockSocketDisconnect = jest.fn();
-export const mockSocketIsConnected = jest.fn();
+export const mockSocketIsConnected = jest.fn().mockImplementation(() => true);
 export const mockSocketOnOpen = jest.fn();
 export const mockSocketOnClose = jest.fn();
 export const mockSocketOnError = jest.fn();
