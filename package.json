@@ -4,13 +4,13 @@
   "description": "lasagna.js, the reference client for the Lasagna web service",
   "main": "dist/lasagna.js",
   "types": "dist/lasagna.d.ts",
+  "unpkg": "dist/lasagna.min.js",
   "files": [
-    "dist/lasagna.js",
-    "dist/lasagna.js.map",
-    "dist/lasagna.d.ts"
+    "dist/"
   ],
   "scripts": {
-    "build": "npm run clean && tsc",
+    "build": "npm run clean && tsc && npm run build:browser",
+    "build:browser": "npx parcel build dist/lasagna.js --out-file lasagna.min.js",
     "clean": "npx rimraf dist",
     "lint": "tslint -p tsconfig.json",
     "prepare": "npm run lint && npm test && npm run build",
