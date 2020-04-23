@@ -94,7 +94,7 @@ describe("Channel", () => {
     expect(cb).toHaveBeenCalledTimes(1);
   });
 
-  test("joinChannel/2 with forced channel refresh", async () => {
+  test("joinChannel/2 with (artificially) forced channel refresh", async () => {
     delete lasagna.CHANNELS["unit-test:thing1"].params.jwt;
     await lasagna.joinChannel("unit-test:thing1");
 
@@ -136,9 +136,15 @@ describe("Channel", () => {
     expect(mockChannelOn).toHaveBeenCalledWith("starred_sneech", cb);
   });
 
-  test("leaveChannel/0", () => {
+  test("leaveChannel/1", () => {
     lasagna.leaveChannel("unit-test:thing3");
     expect(mockChannelLeave).toHaveBeenCalledTimes(1);
     expect(lasagna.CHANNELS["unit-test:thing3"]).toBeUndefined();
+  });
+
+  test("leaveAllChannels/0", () => {
+    expect(Object.keys(lasagna.CHANNELS).length > 0);
+    lasagna.leaveAllChannels();
+    expect(lasagna.CHANNELS).toEqual({});
   });
 });
