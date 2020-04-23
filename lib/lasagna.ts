@@ -89,6 +89,7 @@ export default class Lasagna {
   }
 
   disconnect() {
+    this.leaveAllChannels();
     this.#socket?.disconnect();
     this.#socket = undefined;
   }
@@ -162,6 +163,13 @@ export default class Lasagna {
   leaveChannel(topic: Topic) {
     this.CHANNELS[topic]?.channel.leave();
     delete this.CHANNELS[topic];
+  }
+
+  leaveAllChannels() {
+    Object.keys(this.CHANNELS).forEach((key) =>
+      this.CHANNELS[key].channel.leave()
+    );
+    this.CHANNELS = {};
   }
 
   /**
