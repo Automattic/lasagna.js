@@ -107,6 +107,17 @@ describe("Channel", () => {
     });
   });
 
+  test("joinChannel/2 no_auth", async () => {
+    await lasagna.initChannel("unit-test:no_auth:hola");
+    await lasagna.joinChannel("unit-test:no_auth:hola");
+
+    expect(mockChannelJoin).toHaveBeenCalledTimes(1);
+    expect(lasagna.CHANNELS["unit-test:no_auth:hola"].channel).toBeDefined();
+    expect(
+      lasagna.CHANNELS["unit-test:no_auth:hola"].params.jwt
+    ).toBeUndefined();
+  });
+
   test("joinChannel/2 with unexpected ChannelMap corruption", async () => {
     delete lasagna.CHANNELS["unit-test:thing1"];
     expect(await lasagna.joinChannel("unit-test:thing1")).toBe(false);

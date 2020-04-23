@@ -34,6 +34,7 @@ type SocketCbs = {
 type Topic = string;
 
 const LASAGNA_URL = "wss://lasagna.pub/socket";
+const NO_AUTH_NS = "no_auth";
 
 export default class Lasagna {
   CHANNELS: ChannelMap;
@@ -101,12 +102,14 @@ export default class Lasagna {
       return false;
     }
 
-    if (!params.jwt || this.#shouldRefreshJwt(params.jwt)) {
-      params.jwt = await this.#getJwt("channel", { params, topic });
-    }
+    if (this.#shouldAuth(topic)) {
+      if (!params.jwt || this.#shouldRefreshJwt(params.jwt)) {
+        params.jwt = await this.#getJwt("channel", { params, topic });
+      }
 
-    if (typeof params.jwt !== "string" || params.jwt === "") {
-      return false;
+      if (typeof params.jwt !== "string" || params.jwt === "") {
+        return false;
+      }
     }
 
     const channel = this.#socket.channel(topic, params);
@@ -133,10 +136,12 @@ export default class Lasagna {
       return false;
     }
 
-    const jwt = this.CHANNELS[topic].params.jwt;
+    if (this.#shouldAuth(topic)) {
+      const jwt = this.CHANNELS[topic].params.jwt;
 
-    if (!jwt || this.#shouldRefreshJwt(jwt)) {
-      await this.#refreshChannel(this.CHANNELS[topic]);
+      if (!jwt || this.#shouldRefreshJwt(jwt)) {
+        await this.#refreshChannel(this.CHANNELS[topic]);
+      }
     }
 
     this.CHANNELS[topic].channel.join().receive("ok", () => callback());
@@ -175,6 +180,8 @@ export default class Lasagna {
 
     return jwtExp;
   };
+
+  #shouldAuth = (topic: Topic) => topic.split(":")[1] !== NO_AUTH_NS;
 
   #shouldRefreshJwt = (jwt: string) => Date.now() >= this.#getJwtExp(jwt);
 
