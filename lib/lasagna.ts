@@ -99,7 +99,7 @@ export default class Lasagna {
    */
 
   async initChannel(topic: Topic, params: Params = {}, callbacks?: ChannelCbs) {
-    if (!this.#socket) {
+    if (typeof topic !== "string" || topic === "" || !this.#socket) {
       return false;
     }
 
@@ -133,7 +133,7 @@ export default class Lasagna {
   }
 
   async joinChannel(topic: Topic, callback: Callback = () => undefined) {
-    if (!this.CHANNELS[topic]) {
+    if (typeof topic !== "string" || topic === "" || !this.CHANNELS[topic]) {
       return false;
     }
 
