@@ -88,9 +88,9 @@ export default class Lasagna {
     return this.#socket?.isConnected();
   }
 
-  disconnect() {
+  disconnect(callback?: Callback) {
     this.leaveAllChannels();
-    this.#socket?.disconnect();
+    this.#socket?.disconnect(callback);
     this.#socket = undefined;
   }
 
