@@ -55,7 +55,7 @@ export default class Lasagna {
   async initSocket(params: Params = {}, callbacks?: SocketCbs) {
     const jwt = params.jwt || (await this.#getJwt("socket", { params }));
 
-    if (typeof jwt !== "string" || jwt === "") {
+    if (this.#isInvalidJwt(jwt)) {
       return false;
     }
 
@@ -74,7 +74,7 @@ export default class Lasagna {
         callbacks.onError();
       }
 
-      if (this.#shouldRefreshJwt(jwt)) {
+      if (this.#isInvalidJwt(jwt)) {
         this.#reconnectSocket(params, callbacks);
       }
     });
@@ -104,11 +104,11 @@ export default class Lasagna {
     }
 
     if (this.#shouldAuth(topic)) {
-      if (!params.jwt || this.#shouldRefreshJwt(params.jwt)) {
+      if (!params.jwt || this.#isInvalidJwt(params.jwt)) {
         params.jwt = await this.#getJwt("channel", { params, topic });
       }
 
-      if (typeof params.jwt !== "string" || params.jwt === "") {
+      if (this.#isInvalidJwt(params.jwt)) {
         return false;
       }
     }
@@ -137,11 +137,18 @@ export default class Lasagna {
       return false;
     }
 
-    if (this.#shouldAuth(topic)) {
-      const jwt = this.CHANNELS[topic].params.jwt;
+    if (
+      this.#shouldAuth(topic) &&
+      this.#isInvalidJwt(this.CHANNELS[topic].params.jwt)
+    ) {
+      await this.#refreshChannel(this.CHANNELS[topic]);
 
-      if (!jwt || this.#shouldRefreshJwt(jwt)) {
-        await this.#refreshChannel(this.CHANNELS[topic]);
+      if (!this.CHANNELS[topic]) {
+        return false;
+      }
+
+      if (this.#isInvalidJwt(this.CHANNELS[topic].params.jwt)) {
+        return false;
       }
     }
 
@@ -189,9 +196,15 @@ export default class Lasagna {
     return jwtExp;
   };
 
-  #shouldAuth = (topic: Topic) => topic.split(":")[1] !== NO_AUTH_NS;
+  #isInvalidJwt = (jwt: any) => {
+    if (typeof jwt !== "string" || jwt === "") {
+      return true;
+    }
 
-  #shouldRefreshJwt = (jwt: string) => Date.now() >= this.#getJwtExp(jwt);
+    return Date.now() >= this.#getJwtExp(jwt);
+  };
+
+  #shouldAuth = (topic: Topic) => topic.split(":")[1] !== NO_AUTH_NS;
 
   #reconnectSocket = async (params: Params, callbacks?: SocketCbs) => {
     this.disconnect();
