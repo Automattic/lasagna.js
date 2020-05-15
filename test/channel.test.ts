@@ -82,6 +82,15 @@ describe("Channel", () => {
     expect(await burntLasagna.initChannel("unit-test:thing5")).toBe(false);
   });
 
+  test("initChannel/2 with non-string JWT fetch response", async () => {
+    // @ts-ignore we want this type mismatch for the test scenario
+    const lasagna2 = new Lasagna(() => Promise.resolve({ notajwt: 1 }), url);
+    await lasagna2.initSocket({ jwt: jwtExplicitPassed });
+    await lasagna2.initChannel("unit-test:thing7");
+    lasagna2.connect();
+    expect(await lasagna2.joinChannel("unit-test:thing7")).toBe(false);
+  });
+
   test("joinChannel/2", () => {
     lasagna.joinChannel("unit-test:thing1");
     expect(mockChannelJoin).toHaveBeenCalledTimes(1);
@@ -121,6 +130,16 @@ describe("Channel", () => {
   test("joinChannel/2 with unexpected ChannelMap corruption", async () => {
     delete lasagna.CHANNELS["unit-test:thing1"];
     expect(await lasagna.joinChannel("unit-test:thing1")).toBe(false);
+  });
+
+  test("joinChannel/2 with non-string JWT fetch response", async () => {
+    // @ts-ignore we want this type mismatch for the test scenario
+    const lasagna2 = new Lasagna(() => Promise.resolve({ notajwt: 1 }), url);
+    await lasagna2.initSocket({ jwt: jwtExplicitPassed });
+    await lasagna2.initChannel("unit-test:thing8", { jwt: jwtExplicitPassed });
+    lasagna2.connect();
+    delete lasagna2.CHANNELS["unit-test:thing8"].params.jwt;
+    expect(await lasagna2.joinChannel("unit-test:thing8")).toBe(false);
   });
 
   test("channelPush/3", () => {
