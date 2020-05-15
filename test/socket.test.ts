@@ -17,24 +17,26 @@ import Lasagna from "../lib/lasagna";
  */
 describe("Socket", () => {
   const url = "http://unit-test.local";
+  const jwt =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTg3NTY2MTM4LCJleHAiOjIyMTg1NTAzNjg4OH0.A1fxARHsTBcjJez9MEDrqm8xC3ypasfAGBTl1A64sD0";
+  const anotherJwt =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTg3NTY2MTM4LCJleHAiOjE5MDI5ODEyNjA1OH0.prqRY4pl4Q0C3R73ZKCAx5KwAEYc-DMDsKDvLHV-sx4";
   let lasagna: Lasagna;
 
   beforeEach(() => {
-    lasagna = new Lasagna(() => Promise.resolve("faux-jwt-resp"), url);
+    lasagna = new Lasagna(() => Promise.resolve(jwt), url);
     jest.clearAllMocks();
   });
 
   test("initSocket/1 without jwt param", async () => {
     await lasagna.initSocket({ user_id: "dmte", email: "bob@example.com" });
     lasagna.connect();
-    expect(MockPhoenix.Socket).toHaveBeenCalledWith(url, {
-      params: { jwt: "faux-jwt-resp" },
-    });
+    expect(MockPhoenix.Socket).toHaveBeenCalledWith(url, { params: { jwt } });
     expect(mockSocketConnect).toHaveBeenCalledTimes(1);
   });
 
   test("initSocket/1 with jwt param", async () => {
-    const params = { jwt: "test" };
+    const params = { jwt: anotherJwt };
     await lasagna.initSocket(params);
     lasagna.connect();
     expect(MockPhoenix.Socket).toHaveBeenCalledWith(url, { params });
@@ -54,7 +56,7 @@ describe("Socket", () => {
   });
 
   test("initSocket/1 with jwt param and callbacks", async () => {
-    const params = { jwt: "test" };
+    const params = { jwt: anotherJwt };
     const callbacks = {
       onOpen: () => "yay!",
       onClose: () => "aww",
@@ -73,13 +75,13 @@ describe("Socket", () => {
   });
 
   test("isConnected/0", async () => {
-    await lasagna.initSocket({ jwt: "test" });
+    await lasagna.initSocket({ jwt: anotherJwt });
     expect(lasagna.isConnected()).toBe(false);
     expect(mockSocketIsConnected).toHaveBeenCalledTimes(1);
   });
 
   test("disconnect/0", async () => {
-    await lasagna.initSocket({ jwt: "test" });
+    await lasagna.initSocket({ jwt: anotherJwt });
     lasagna.connect();
     lasagna.disconnect();
     expect(mockSocketDisconnect).toHaveBeenCalledTimes(1);

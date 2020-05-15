@@ -74,7 +74,7 @@ export default class Lasagna {
         callbacks.onError();
       }
 
-      if (this.#shouldRefreshJwt(jwt)) {
+      if (this.#isInvalidJwt(jwt)) {
         this.#reconnectSocket(params, callbacks);
       }
     });
@@ -104,7 +104,7 @@ export default class Lasagna {
     }
 
     if (this.#shouldAuth(topic)) {
-      if (!params.jwt || this.#shouldRefreshJwt(params.jwt)) {
+      if (!params.jwt || this.#isInvalidJwt(params.jwt)) {
         params.jwt = await this.#getJwt("channel", { params, topic });
       }
 
@@ -139,7 +139,7 @@ export default class Lasagna {
 
     if (
       this.#shouldAuth(topic) &&
-      this.#shouldRefreshJwt(this.CHANNELS[topic].params.jwt)
+      this.#isInvalidJwt(this.CHANNELS[topic].params.jwt)
     ) {
       await this.#refreshChannel(this.CHANNELS[topic]);
 
@@ -196,13 +196,15 @@ export default class Lasagna {
     return jwtExp;
   };
 
-  #isInvalidJwt = (str: any) => typeof str !== "string" || str === "";
+  #isInvalidJwt = (jwt: any) => {
+    if (typeof jwt !== "string" || jwt === "") {
+      return true;
+    }
+
+    return Date.now() >= this.#getJwtExp(jwt);
+  };
 
   #shouldAuth = (topic: Topic) => topic.split(":")[1] !== NO_AUTH_NS;
-
-  #shouldRefreshJwt = (jwt: any) => {
-    return this.#isInvalidJwt(jwt) || Date.now() >= this.#getJwtExp(jwt);
-  };
 
   #reconnectSocket = async (params: Params, callbacks?: SocketCbs) => {
     this.disconnect();
