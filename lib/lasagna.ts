@@ -33,7 +33,7 @@ type SocketCbs = {
 };
 type Topic = string;
 
-const LASAGNA_URL = "wss://lasagna.pub/socket";
+const LASAGNA_URL = "wss://rt-api.wordpress.com/socket";
 const NO_AUTH_NS = "no_auth";
 
 export default class Lasagna {
