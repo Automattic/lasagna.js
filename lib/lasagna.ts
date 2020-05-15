@@ -34,7 +34,7 @@ type SocketCbs = {
 type Topic = string;
 
 const LASAGNA_URL = "wss://rt-api.wordpress.com/socket";
-const NO_AUTH_NS = "no_auth";
+const NO_AUTH = "no_auth";
 
 export default class Lasagna {
   CHANNELS: ChannelMap;
@@ -103,7 +103,7 @@ export default class Lasagna {
       return false;
     }
 
-    if (this.#shouldAuth(topic)) {
+    if (this.shouldAuth(topic)) {
       if (!params.jwt || this.#isInvalidJwt(params.jwt)) {
         params.jwt = await this.#getJwt("channel", { params, topic });
       }
@@ -138,7 +138,7 @@ export default class Lasagna {
     }
 
     if (
-      this.#shouldAuth(topic) &&
+      this.shouldAuth(topic) &&
       this.#isInvalidJwt(this.CHANNELS[topic].params.jwt)
     ) {
       await this.#refreshChannel(this.CHANNELS[topic]);
@@ -158,6 +158,8 @@ export default class Lasagna {
   channelPush(topic: Topic, event: Event, payload: Payload) {
     this.CHANNELS[topic]?.channel.push(event, payload);
   }
+
+  shouldAuth = (topic: Topic) => topic.split(":")[0].split("-")[1] !== NO_AUTH;
 
   registerEventHandler(topic: Topic, event: Event, callback: Callback) {
     return this.CHANNELS[topic]?.channel.on(event, callback);
@@ -203,8 +205,6 @@ export default class Lasagna {
 
     return Date.now() >= this.#getJwtExp(jwt);
   };
-
-  #shouldAuth = (topic: Topic) => topic.split(":")[1] !== NO_AUTH_NS;
 
   #reconnectSocket = async (params: Params, callbacks?: SocketCbs) => {
     this.disconnect();
