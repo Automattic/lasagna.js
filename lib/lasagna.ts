@@ -120,7 +120,9 @@ export default class Lasagna {
     }
 
     channel.onError(async () => {
-      callbacks?.onError && callbacks.onError();
+      if (callbacks && callbacks.onError) {
+        callbacks.onError();
+      }
 
       if (this.#shouldRefreshJwt(this.CHANNELS[topic])) {
         await this.#refreshChannel(this.CHANNELS[topic]);
