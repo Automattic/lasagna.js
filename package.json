@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "build": "npm run clean && tsc && npm run build:browser",
-    "build:browser": "npx parcel build dist/lasagna.js --out-file lasagna.min.js",
+    "build:browser": "npx parcel build dist/lasagna.js --global Lasagna --out-file lasagna.min.js",
     "clean": "npx rimraf dist",
     "lint": "tslint -p tsconfig.json",
     "prepare": "npm run lint && npm test && npm run build",
