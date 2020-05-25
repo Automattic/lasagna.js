@@ -8,7 +8,7 @@ import JWT from "jwt-decode";
  * TS types
  */
 type Callback = () => any;
-type ChannelCbs = { onClose?: Callback; onError?: Callback; };
+type ChannelCbs = { onClose?: Callback; onError?: Callback };
 type ChannelHandle = {
   callbacks: ChannelCbs | undefined;
   channel: Channel;
@@ -16,15 +16,15 @@ type ChannelHandle = {
   retries: number;
   topic: Topic;
 };
-type ChannelMap = { [topic: string]: ChannelHandle; };
-type DecodedJWT = { exp: number; iat: number; iss: string; };
+type ChannelMap = { [topic: string]: ChannelHandle };
+type DecodedJWT = { exp: number; iat: number; iss: string };
 type Event = string;
 type GetJwtFn = (
   type: "socket" | "channel",
   meta: GetJwtFnMetaParam
 ) => Promise<string>;
-type GetJwtFnMetaParam = { params: Params; topic?: Topic; };
-type Params = { jwt?: string;[key: string]: any; };
+type GetJwtFnMetaParam = { params: Params; topic?: Topic };
+type Params = { jwt?: string; [key: string]: any };
 type Payload = object;
 type SocketCbs = {
   onClose?: Callback;
@@ -209,8 +209,8 @@ export default class Lasagna {
     return Date.now() >= this.#getJwtExp(jwt);
   };
 
-  #shouldRefreshJwt = (channel: ChannelHandle) => {
-    return this.shouldAuth(channel.topic) && this.#isInvalidJwt(channel.params.jwt);
+  #shouldRefreshJwt = ({ topic, params }: ChannelHandle) => {
+    return this.shouldAuth(topic) && this.#isInvalidJwt(params.jwt);
   };
 
   #reconnectSocket = async (params: Params, callbacks?: SocketCbs) => {
