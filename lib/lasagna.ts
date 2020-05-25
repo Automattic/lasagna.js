@@ -8,7 +8,7 @@ import JWT from "jwt-decode";
  * TS types
  */
 type Callback = () => any;
-type ChannelCbs = { onClose?: Callback; onError?: Callback };
+type ChannelCbs = { onClose?: Callback; onError?: Callback; };
 type ChannelHandle = {
   callbacks: ChannelCbs | undefined;
   channel: Channel;
@@ -16,15 +16,15 @@ type ChannelHandle = {
   retries: number;
   topic: Topic;
 };
-type ChannelMap = { [topic: string]: ChannelHandle };
-type DecodedJWT = { exp: number; iat: number; iss: string };
+type ChannelMap = { [topic: string]: ChannelHandle; };
+type DecodedJWT = { exp: number; iat: number; iss: string; };
 type Event = string;
 type GetJwtFn = (
   type: "socket" | "channel",
   meta: GetJwtFnMetaParam
 ) => Promise<string>;
-type GetJwtFnMetaParam = { params: Params; topic?: Topic };
-type Params = { jwt?: string; [key: string]: any };
+type GetJwtFnMetaParam = { params: Params; topic?: Topic; };
+type Params = { jwt?: string;[key: string]: any; };
 type Payload = object;
 type SocketCbs = {
   onClose?: Callback;
@@ -119,9 +119,17 @@ export default class Lasagna {
       channel.onClose(callbacks.onClose);
     }
 
-    if (callbacks && callbacks.onError) {
-      channel.onError(callbacks.onError);
-    }
+    channel.onError(async () => {
+      callbacks?.onError && callbacks.onError();
+
+      if (this.#shouldRefreshJwt(this.CHANNELS[topic])) {
+        await this.#refreshChannel(this.CHANNELS[topic]);
+
+        if (this.#isInvalidJwt(this.CHANNELS[topic]?.params.jwt)) {
+          this.leaveChannel(topic);
+        }
+      }
+    });
 
     this.CHANNELS[topic] = {
       callbacks,
@@ -137,17 +145,10 @@ export default class Lasagna {
       return false;
     }
 
-    if (
-      this.shouldAuth(topic) &&
-      this.#isInvalidJwt(this.CHANNELS[topic].params.jwt)
-    ) {
+    if (this.#shouldRefreshJwt(this.CHANNELS[topic])) {
       await this.#refreshChannel(this.CHANNELS[topic]);
 
-      if (!this.CHANNELS[topic]) {
-        return false;
-      }
-
-      if (this.#isInvalidJwt(this.CHANNELS[topic].params.jwt)) {
+      if (this.#isInvalidJwt(this.CHANNELS[topic]?.params.jwt)) {
         return false;
       }
     }
@@ -204,6 +205,10 @@ export default class Lasagna {
     }
 
     return Date.now() >= this.#getJwtExp(jwt);
+  };
+
+  #shouldRefreshJwt = (channel: ChannelHandle) => {
+    return this.shouldAuth(channel.topic) && this.#isInvalidJwt(channel.params.jwt);
   };
 
   #reconnectSocket = async (params: Params, callbacks?: SocketCbs) => {
