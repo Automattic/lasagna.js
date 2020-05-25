@@ -15,6 +15,14 @@ This client provides:
 2. `import Lasagna from '@automattic/lasagna'`
 3. `const lasagna = new Lasagna( myJwtFetcherCallback )`;
 
+`myJwtFetcherCallback` is any function with the following signature:
+
+```JavaScript
+("socket" | "channel", params) => Promise<JWT>
+```
+
+`params` is a passthrough of the `params` given to `initSocket` or `initChannel`. The function should make a request to your domain's Lasagna JWT issuer endpoint and return a JWT appropriate for the concern.
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss the change.
