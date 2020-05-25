@@ -5,6 +5,7 @@ export const mockSocketOnOpen = jest.fn();
 export const mockSocketOnClose = jest.fn();
 export const mockSocketOnError = jest.fn();
 export const mockChannelOn = jest.fn();
+export const mockChannelOnError = jest.fn();
 export const mockChannelPush = jest.fn();
 export const mockChannelLeave = jest.fn();
 export const mockChannelJoin = jest.fn().mockImplementation(() => {
@@ -19,6 +20,7 @@ const mockChannel = jest.fn().mockImplementation(() => ({
   join: mockChannelJoin,
   leave: mockChannelLeave,
   on: mockChannelOn,
+  onError: mockChannelOnError,
   push: mockChannelPush,
 }));
 
