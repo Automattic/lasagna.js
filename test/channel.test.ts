@@ -40,7 +40,6 @@ describe("Channel", () => {
     expect(lasagna.CHANNELS["test:thing2"]).toMatchObject({
       params: { jwt: jwtRemoteFetched, private: "thingy" },
       topic: "test:thing2",
-      retries: 0,
     });
   });
 
@@ -51,7 +50,6 @@ describe("Channel", () => {
     expect(lasagna.CHANNELS["test:thing2"]).toMatchObject({
       params: { jwt: jwtExplicitPassed },
       topic: "test:thing2",
-      retries: 0,
     });
   });
 
@@ -62,7 +60,6 @@ describe("Channel", () => {
     expect(lasagna.CHANNELS["test:thing2"]).toMatchObject({
       params: { jwt: jwtRemoteFetched },
       topic: "test:thing2",
-      retries: 0,
     });
   });
 
@@ -73,7 +70,6 @@ describe("Channel", () => {
     expect(lasagna.CHANNELS["test:thing2"]).toMatchObject({
       params: { jwt: jwtRemoteFetched },
       topic: "test:thing2",
-      retries: 0,
     });
   });
 
@@ -112,7 +108,6 @@ describe("Channel", () => {
     expect(lasagna.CHANNELS["test:thing1"]).toMatchObject({
       params: { jwt: jwtRemoteFetched },
       topic: "test:thing1",
-      retries: 0,
     });
   });
 

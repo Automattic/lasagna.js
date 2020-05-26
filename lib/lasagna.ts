@@ -2,6 +2,7 @@
  * External dependencies
  */
 import { Channel, Socket } from "phoenix";
+import { EventEmitter } from "events";
 import JWT from "jwt-decode";
 
 /**
@@ -13,11 +14,10 @@ type ChannelHandle = {
   callbacks: ChannelCbs | undefined;
   channel: Channel;
   params: Params;
-  retries: number;
   topic: Topic;
 };
 type ChannelMap = { [topic: string]: ChannelHandle };
-type DecodedJWT = { exp: number; iat: number; iss: string };
+type DecodedChannelJWT = { cxp: number; exp: number; iat: number; iss: string };
 type Event = string;
 type GetJwtFn = (
   type: "socket" | "channel",
@@ -32,6 +32,9 @@ type SocketCbs = {
   onOpen?: Callback;
 };
 type Topic = string;
+
+const eventEmitter = new EventEmitter();
+const listenerUid = "lasagna.js-" + Date.now();
 
 const LASAGNA_URL = "wss://rt-api.wordpress.com/socket";
 const NO_AUTH = "no_auth";
@@ -115,27 +118,28 @@ export default class Lasagna {
 
     const channel = this.#socket.channel(topic, params);
 
-    channel.onClose(async () => {
+    if (callbacks && callbacks.onError) {
+      channel.onError(callbacks.onError);
+    }
+
+    channel.onClose(() => {
       if (callbacks && callbacks.onClose) {
         callbacks.onClose();
       }
 
-      if (this.#shouldRejoinOnClose(this.CHANNELS[topic])) {
-        await this.#refreshChannel(this.CHANNELS[topic]);
-        this.joinChannel(topic, this.CHANNELS[topic].callbacks?.onJoin);
+      if (this.#shouldRejoinOnClose(topic)) {
+        eventEmitter.emit(listenerUid + topic, this.CHANNELS[topic]);
       }
     });
 
-    if (callbacks && callbacks.onError) {
-      channel.onError(callbacks.onError);
-    }
+    eventEmitter.removeAllListeners(listenerUid + topic);
+    eventEmitter.addListener(listenerUid + topic, this.#rejoinChannel);
 
     this.CHANNELS[topic] = {
       callbacks,
       channel,
       params,
       topic,
-      retries: 0,
     };
   }
 
@@ -153,12 +157,19 @@ export default class Lasagna {
       .join()
       .receive("ok", () => callback())
       .receive("error", async () => {
-        if (this.#shouldRefreshJwt(this.CHANNELS[topic])) {
-          await this.#refreshChannel(this.CHANNELS[topic]);
+        if (!this.shouldAuth(topic)) {
+          return;
+        }
 
-          if (this.#isInvalidJwt(this.CHANNELS[topic]?.params.jwt)) {
-            this.leaveChannel(topic);
-          }
+        if (this.#isInvalidJwt(this.CHANNELS[topic].params.jwt)) {
+          this.CHANNELS[topic].params.jwt = await this.#getJwt("channel", {
+            params: this.CHANNELS[topic].params,
+            topic,
+          });
+        }
+
+        if (this.#isInvalidJwt(this.CHANNELS[topic].params.jwt)) {
+          this.leaveChannel(topic);
         }
       });
   }
@@ -193,17 +204,20 @@ export default class Lasagna {
    * Private methods
    */
 
-  #getJwtExp = (jwt: string) => {
-    let jwtExp;
+  #getJwtExps = (jwt: string) => {
+    let cxp;
+    let exp;
 
     try {
-      const decodedJwt: DecodedJWT = JWT(jwt);
-      jwtExp = decodedJwt.exp * 1000;
+      const decodedJwt: DecodedChannelJWT = JWT(jwt);
+      cxp = decodedJwt.cxp * 1000;
+      exp = decodedJwt.exp * 1000;
     } catch {
-      jwtExp = 0;
+      cxp = 0;
+      exp = 0;
     }
 
-    return jwtExp;
+    return { cxp, exp };
   };
 
   #isInvalidJwt = (jwt: any) => {
@@ -211,14 +225,12 @@ export default class Lasagna {
       return true;
     }
 
-    return Date.now() >= this.#getJwtExp(jwt);
+    const { cxp, exp } = this.#getJwtExps(jwt);
+
+    return Date.now() >= cxp || Date.now() >= exp;
   };
 
-  #shouldRejoinOnClose = ({ topic }: ChannelHandle) => this.shouldAuth(topic);
-
-  #shouldRefreshJwt = ({ topic, params }: ChannelHandle) => {
-    return this.shouldAuth(topic) && this.#isInvalidJwt(params.jwt);
-  };
+  #shouldRejoinOnClose = (topic: Topic) => this.shouldAuth(topic);
 
   #reconnectSocket = async (params: Params, callbacks?: SocketCbs) => {
     this.disconnect();
@@ -227,9 +239,10 @@ export default class Lasagna {
     this.connect();
   };
 
-  #refreshChannel = async ({ topic, params, callbacks }: ChannelHandle) => {
-    this.leaveChannel(topic);
-    delete params.jwt;
+  #rejoinChannel = async ({ topic, params, callbacks }: ChannelHandle) => {
+    eventEmitter.removeAllListeners(listenerUid + topic);
+    const onJoinCb = this.CHANNELS[topic].callbacks?.onJoin;
     await this.initChannel(topic, params, callbacks);
+    this.joinChannel(topic, onJoinCb);
   };
 }
