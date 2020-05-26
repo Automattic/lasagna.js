@@ -32,6 +32,9 @@ type SocketCbs = {
 };
 type Topic = string;
 
+const EventEmitter = require("events");
+const eventEmitter = new EventEmitter();
+
 const LASAGNA_URL = "wss://rt-api.wordpress.com/socket";
 const NO_AUTH = "no_auth";
 
@@ -114,20 +117,21 @@ export default class Lasagna {
 
     const channel = this.#socket.channel(topic, params);
 
+    if (callbacks && callbacks.onError) {
+      channel.onError(callbacks.onError);
+    }
+
     channel.onClose(() => {
       if (callbacks && callbacks.onClose) {
         callbacks.onClose();
       }
 
-      if (this.#socket && this.#shouldRejoinOnClose(topic)) {
-        this.CHANNELS[topic].channel = this.#socket.channel(topic, params);
-        this.joinChannel(topic, this.CHANNELS[topic].callbacks?.onJoin);
+      if (this.#shouldRejoinOnClose(topic)) {
+        eventEmitter.emit("lasagna-rejoin-" + topic, this.CHANNELS[topic]);
       }
     });
 
-    if (callbacks && callbacks.onError) {
-      channel.onError(callbacks.onError);
-    }
+    eventEmitter.addListener("lasagna-rejoin-" + topic, this.#rejoinChannel);
 
     this.CHANNELS[topic] = {
       callbacks,
@@ -231,5 +235,12 @@ export default class Lasagna {
     delete params.jwt;
     await this.initSocket(params, callbacks);
     this.connect();
+  };
+
+  #rejoinChannel = async ({ topic, params, callbacks }: ChannelHandle) => {
+    eventEmitter.removeAllListeners("lasagna-rejoin-" + topic);
+    const onJoinCb = this.CHANNELS[topic].callbacks?.onJoin;
+    await this.initChannel(topic, params, callbacks);
+    this.joinChannel(topic, onJoinCb);
   };
 }
