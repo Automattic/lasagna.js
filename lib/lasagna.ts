@@ -119,12 +119,8 @@ export default class Lasagna {
         callbacks.onClose();
       }
 
-      if (this.#socket && this.#shouldRejoinOnClose(this.CHANNELS[topic])) {
-        this.CHANNELS[topic].channel = this.#socket.channel(
-          topic,
-          this.CHANNELS[topic].params
-        );
-
+      if (this.#socket && this.#shouldRejoinOnClose(topic)) {
+        this.CHANNELS[topic].channel = this.#socket.channel(topic, params);
         this.joinChannel(topic, this.CHANNELS[topic].callbacks?.onJoin);
       }
     });
@@ -228,7 +224,7 @@ export default class Lasagna {
     return Date.now() >= cxp || Date.now() >= exp;
   };
 
-  #shouldRejoinOnClose = ({ topic }: ChannelHandle) => this.shouldAuth(topic);
+  #shouldRejoinOnClose = (topic: Topic) => this.shouldAuth(topic);
 
   #reconnectSocket = async (params: Params, callbacks?: SocketCbs) => {
     this.disconnect();
