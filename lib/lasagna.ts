@@ -2,8 +2,8 @@
  * External dependencies
  */
 import { Channel, Socket } from "phoenix";
-import JWT from "jwt-decode";
 import { EventEmitter } from "events";
+import JWT from "jwt-decode";
 
 /**
  * TS types
