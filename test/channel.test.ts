@@ -130,16 +130,6 @@ describe("Channel", () => {
     expect(await lasagna.joinChannel("test:thing1")).toBe(false);
   });
 
-  test("joinChannel/2 with non-string JWT fetch response", async () => {
-    // @ts-ignore we want this type mismatch for the test scenario
-    const lasagna2 = new Lasagna(() => Promise.resolve({ notajwt: 1 }), url);
-    await lasagna2.initSocket({ jwt: jwtExplicitPassed });
-    await lasagna2.initChannel("test:thing8", { jwt: jwtExplicitPassed });
-    lasagna2.connect();
-    delete lasagna2.CHANNELS["test:thing8"].params.jwt;
-    expect(await lasagna2.joinChannel("test:thing8")).toBe(false);
-  });
-
   test("channelPush/3", () => {
     lasagna.channelPush("test:thing3", "new_sneech", { whatev: "a" });
     expect(mockChannelPush).toHaveBeenCalledTimes(1);
