@@ -3,6 +3,7 @@
  */
 import { Channel, Socket } from "phoenix";
 import JWT from "jwt-decode";
+import { EventEmitter } from "events";
 
 /**
  * TS types
@@ -32,7 +33,6 @@ type SocketCbs = {
 };
 type Topic = string;
 
-const EventEmitter = require("events");
 const eventEmitter = new EventEmitter();
 const listenerUid = "lasagna.js-" + Date.now();
 
