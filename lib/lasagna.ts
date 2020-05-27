@@ -122,15 +122,17 @@ export default class Lasagna {
       channel.onError(callbacks.onError);
     }
 
-    channel.onClose(() => {
-      if (callbacks && callbacks.onClose) {
-        callbacks.onClose();
-      }
+    if (callbacks && callbacks.onClose) {
+      channel.onClose(callbacks.onClose);
+    }
 
+    channel.on("kicked", () => {
       if (this.#shouldRejoinOnClose(topic)) {
         eventEmitter.emit(listenerUid + topic, this.CHANNELS[topic]);
       }
     });
+
+    channel.on("banned", () => this.leaveChannel(topic));
 
     eventEmitter.removeAllListeners(listenerUid + topic);
     eventEmitter.addListener(listenerUid + topic, this.#rejoinChannel);
