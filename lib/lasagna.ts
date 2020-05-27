@@ -126,11 +126,9 @@ export default class Lasagna {
       channel.onClose(callbacks.onClose);
     }
 
-    channel.on("kicked", () => {
-      if (this.#shouldRejoinOnClose(topic)) {
-        eventEmitter.emit(listenerUid + topic, this.CHANNELS[topic]);
-      }
-    });
+    channel.on("kicked", () =>
+      eventEmitter.emit(listenerUid + topic, this.CHANNELS[topic])
+    );
 
     channel.on("banned", () => this.leaveChannel(topic));
 
@@ -232,19 +230,17 @@ export default class Lasagna {
     return Date.now() >= cxp || Date.now() >= exp;
   };
 
-  #shouldRejoinOnClose = (topic: Topic) => this.shouldAuth(topic);
+  #rejoinChannel = async ({ topic, params, callbacks }: ChannelHandle) => {
+    eventEmitter.removeAllListeners(listenerUid + topic);
+    const onJoinCb = this.CHANNELS[topic].callbacks?.onJoin;
+    await this.initChannel(topic, params, callbacks);
+    this.joinChannel(topic, onJoinCb);
+  };
 
   #reconnectSocket = async (params: Params, callbacks?: SocketCbs) => {
     this.disconnect();
     delete params.jwt;
     await this.initSocket(params, callbacks);
     this.connect();
-  };
-
-  #rejoinChannel = async ({ topic, params, callbacks }: ChannelHandle) => {
-    eventEmitter.removeAllListeners(listenerUid + topic);
-    const onJoinCb = this.CHANNELS[topic].callbacks?.onJoin;
-    await this.initChannel(topic, params, callbacks);
-    this.joinChannel(topic, onJoinCb);
   };
 }
