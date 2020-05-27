@@ -141,7 +141,7 @@ export default class Lasagna {
     };
   }
 
-  joinChannel(topic: Topic, callback: Callback = () => undefined) {
+  async joinChannel(topic: Topic, callback: Callback = () => undefined) {
     if (typeof topic !== "string" || topic === "" || !this.CHANNELS[topic]) {
       return false;
     }
