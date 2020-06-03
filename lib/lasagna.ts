@@ -243,3 +243,5 @@ export default class Lasagna {
     this.connect();
   };
 }
+
+module.exports = Lasagna;
