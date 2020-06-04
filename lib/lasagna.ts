@@ -55,10 +55,14 @@ export default class Lasagna {
    */
 
   async initSocket(params: Params = {}, callbacks?: SocketCbs) {
-    const jwt = params.jwt || (await this.#getJwt("socket", { params }));
+    let jwt = params.jwt;
 
     if (this.isInvalidJwt(jwt)) {
-      return false;
+      jwt = await this.#getJwt("socket", { params });
+
+      if (this.isInvalidJwt(jwt)) {
+        return false;
+      }
     }
 
     this.#socket = new Socket(this.#lasagnaUrl, { params: { jwt } });
@@ -115,7 +119,7 @@ export default class Lasagna {
       }
     }
 
-    const channel = this.#socket.channel(topic, params);
+    const channel = this.#socket.channel(topic, { jwt: params.jwt });
 
     if (callbacks && callbacks.onError) {
       channel.onError(callbacks.onError);
