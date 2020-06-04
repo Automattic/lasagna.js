@@ -43,16 +43,17 @@ describe("Socket", () => {
     expect(mockSocketConnect).toHaveBeenCalledTimes(1);
   });
 
-  test("initSocket/1 with bad jwt param", async () => {
-    // @ts-ignore: type mismatch
-    expect(await lasagna.initSocket({ jwt: [] })).toBe(false);
-    lasagna.connect();
-    expect(MockPhoenix.Socket).toHaveBeenCalledTimes(0);
-  });
-
   test("initSocket/1 with bad fetcher response", async () => {
     const burntLasagna = new Lasagna(() => Promise.resolve(""), url);
     expect(await burntLasagna.initSocket()).toBe(false);
+  });
+
+  test("initSocket/1 with bad jwt param and bad fetcher response", async () => {
+    const burntLasagna = new Lasagna(() => Promise.resolve(""), url);
+    // @ts-ignore: type mismatch
+    expect(await burntLasagna.initSocket({ jwt: [] })).toBe(false);
+    burntLasagna.connect();
+    expect(MockPhoenix.Socket).toHaveBeenCalledTimes(0);
   });
 
   test("initSocket/1 with jwt param and callbacks", async () => {
