@@ -36,7 +36,7 @@ type Topic = string;
 const LASAGNA_URL = "wss://rt-api.wordpress.com/socket";
 const NO_AUTH = "no_auth";
 
-export default class Lasagna {
+export class Lasagna {
   CHANNELS: ChannelMap;
   #eventEmitter: EventEmitter;
   #lasagnaUrl: string;
