@@ -86,19 +86,17 @@ export default class Lasagna {
     });
   }
 
-  connect() {
-    this.#socket?.connect();
-  }
+  connect = () => this.#socket?.connect();
 
   isConnected() {
     return this.#socket?.isConnected();
   }
 
-  disconnect(callback?: Callback) {
+  disconnect = (callback?: Callback) => {
     this.leaveAllChannels();
     this.#socket?.disconnect(callback);
     this.#socket = undefined;
-  }
+  };
 
   /**
    * Channel
@@ -180,7 +178,7 @@ export default class Lasagna {
     this.CHANNELS[topic]?.channel.push(event, payload);
   }
 
-  isInvalidJwt = (jwt: any) => {
+  isInvalidJwt(jwt: any) {
     if (typeof jwt !== "string" || jwt === "") {
       return true;
     }
@@ -188,9 +186,11 @@ export default class Lasagna {
     const { cxp, exp } = this.#getJwtExps(jwt);
 
     return (cxp && Date.now() >= cxp) || Date.now() >= exp;
-  };
+  }
 
-  shouldAuth = (topic: Topic) => topic.split(":")[0].split("-")[1] !== NO_AUTH;
+  shouldAuth(topic: Topic) {
+    return topic.split(":")[0].split("-")[1] !== NO_AUTH;
+  }
 
   registerEventHandler(topic: Topic, event: Event, callback: Callback) {
     return this.CHANNELS[topic]?.channel.on(event, callback);
