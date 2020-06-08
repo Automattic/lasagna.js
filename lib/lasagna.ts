@@ -207,9 +207,7 @@ export default class Lasagna {
   }
 
   leaveAllChannels() {
-    Object.keys(this.CHANNELS).forEach((key) =>
-      this.CHANNELS[key].channel.leave()
-    );
+    Object.keys(this.CHANNELS).forEach((topic) => this.leaveChannel(topic));
     this.CHANNELS = {};
   }
 
@@ -236,8 +234,8 @@ export default class Lasagna {
   };
 
   #rejoinChannel = async ({ topic, params, callbacks }: ChannelHandle) => {
-    this.#eventEmitter.removeAllListeners("lasagna-rejoin-" + topic);
     const onJoinCb = this.CHANNELS[topic].callbacks?.onJoin;
+    this.leaveChannel(topic);
     await this.initChannel(topic, params, callbacks);
     this.joinChannel(topic, onJoinCb);
   };
