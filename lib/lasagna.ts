@@ -61,6 +61,7 @@ export default class Lasagna {
       jwt = await this.#getJwt("socket", { params });
 
       if (this.isInvalidJwt(jwt)) {
+        this.disconnect();
         return false;
       }
     }
@@ -104,6 +105,7 @@ export default class Lasagna {
 
   async initChannel(topic: Topic, params: Params = {}, callbacks?: ChannelCbs) {
     if (typeof topic !== "string" || topic === "" || !this.#socket) {
+      this.leaveChannel(topic);
       return false;
     }
 
@@ -113,6 +115,7 @@ export default class Lasagna {
       }
 
       if (this.isInvalidJwt(params.jwt)) {
+        this.leaveChannel(topic);
         return false;
       }
     }
@@ -143,7 +146,7 @@ export default class Lasagna {
     };
   }
 
-  async joinChannel(topic: Topic, callback: Callback = () => undefined) {
+  joinChannel(topic: Topic, callback: Callback = () => undefined) {
     if (typeof topic !== "string" || topic === "" || !this.CHANNELS[topic]) {
       return false;
     }
