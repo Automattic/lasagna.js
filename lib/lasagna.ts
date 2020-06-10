@@ -147,7 +147,7 @@ export default class Lasagna {
     };
   }
 
-  joinChannel(topic: Topic, callback: Callback = NOOP, authedRejoin = true) {
+  joinChannel(topic: Topic, callback: Callback = NOOP, authedRefresh = true) {
     if (typeof topic !== "string" || topic === "" || !this.CHANNELS[topic]) {
       return false;
     }
@@ -165,7 +165,11 @@ export default class Lasagna {
           return;
         }
 
-        if (authedRejoin) {
+        if (!this.isInvalidJwt(this.CHANNELS[topic].params.jwt)) {
+          return;
+        }
+
+        if (authedRefresh) {
           this.#eventEmitter.emit(
             "lasagna-rejoin-" + topic,
             this.CHANNELS[topic]
