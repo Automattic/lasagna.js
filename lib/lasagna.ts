@@ -164,16 +164,10 @@ export default class Lasagna {
           return;
         }
 
-        if (this.isInvalidJwt(this.CHANNELS[topic].params.jwt)) {
-          this.CHANNELS[topic].params.jwt = await this.#getJwt("channel", {
-            params: this.CHANNELS[topic].params,
-            topic,
-          });
-        }
-
-        if (this.isInvalidJwt(this.CHANNELS[topic].params.jwt)) {
-          this.leaveChannel(topic);
-        }
+        this.#eventEmitter.emit(
+          "lasagna-rejoin-" + topic,
+          this.CHANNELS[topic]
+        );
       });
   }
 
