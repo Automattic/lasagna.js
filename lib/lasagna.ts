@@ -160,7 +160,7 @@ export default class Lasagna {
     this.CHANNELS[topic].channel
       .join()
       .receive("ok", () => callback())
-      .receive("error", async () => {
+      .receive("error", () => {
         if (!this.shouldAuth(topic)) {
           return;
         }
