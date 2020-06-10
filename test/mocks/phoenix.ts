@@ -1,4 +1,6 @@
-export const eventOnWire = null;
+let eventOnWire: any = null;
+const clearEventOnWire = () => (eventOnWire = null);
+export const setEventOnWire = (event: string) => (eventOnWire = event);
 
 export const mockSocketConnect = jest.fn();
 export const mockSocketDisconnect = jest.fn();
@@ -18,6 +20,7 @@ export const mockChannelJoin = jest.fn().mockImplementation(() => {
 const mockPush = jest.fn().mockImplementation(() => ({
   receive: function (status: string, callback: () => any) {
     if (eventOnWire === status) {
+      clearEventOnWire();
       callback();
     }
 
