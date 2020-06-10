@@ -2,7 +2,7 @@
  * Mocks
  */
 import MockPhoenix, {
-  eventOnWire,
+  setEventOnWire,
   mockChannelJoin,
   mockChannelLeave,
   mockChannelOn,
@@ -95,16 +95,21 @@ describe("Channel", () => {
 
   test("joinChannel/2 with callback", () => {
     const cb = jest.fn().mockImplementation(() => "howdy!");
+    setEventOnWire("ok");
     lasagna.joinChannel("test:thing1", cb);
     expect(mockChannelJoin).toHaveBeenCalledTimes(1);
     expect(cb).toHaveBeenCalledTimes(1);
   });
 
-  test("joinChannel/2 with (artificially) forced channel refresh", async () => {
+  test("joinChannel/2 with error then channel refresh", async () => {
     delete lasagna.CHANNELS["test:thing1"].params.jwt;
-    await lasagna.joinChannel("test:thing1");
+    setEventOnWire("error");
+    lasagna.joinChannel("test:thing1");
 
-    expect(mockChannelJoin).toHaveBeenCalledTimes(1);
+    // ugly, but we have to wait for the reinit via emit to happen
+    await new Promise((r) => setTimeout(r, 1000));
+
+    expect(mockChannelJoin).toHaveBeenCalledTimes(2);
     expect(lasagna.CHANNELS["test:thing1"].channel).toBeDefined();
     expect(lasagna.CHANNELS["test:thing1"]).toMatchObject({
       params: { jwt: jwtRemoteFetched },
@@ -114,7 +119,7 @@ describe("Channel", () => {
 
   test("joinChannel/2 no_auth", async () => {
     await lasagna.initChannel("test-no_auth:hola");
-    await lasagna.joinChannel("test-no_auth:hola");
+    lasagna.joinChannel("test-no_auth:hola");
 
     expect(mockChannelJoin).toHaveBeenCalledTimes(1);
     expect(lasagna.CHANNELS["test-no_auth:hola"].channel).toBeDefined();
@@ -123,7 +128,7 @@ describe("Channel", () => {
 
   test("joinChannel/2 with unexpected ChannelMap corruption", async () => {
     delete lasagna.CHANNELS["test:thing1"];
-    expect(await lasagna.joinChannel("test:thing1")).toBe(false);
+    expect(lasagna.joinChannel("test:thing1")).toBe(false);
   });
 
   test("channelPush/3", () => {
