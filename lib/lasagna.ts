@@ -58,7 +58,7 @@ export default class Lasagna {
     let jwt = params.jwt;
 
     if (this.isInvalidJwt(jwt)) {
-      jwt = await this.#getJwt("socket", { params });
+      jwt = await this.#safeGetJwt("socket", { params });
 
       if (this.isInvalidJwt(jwt)) {
         this.disconnect();
@@ -111,7 +111,7 @@ export default class Lasagna {
 
     if (this.shouldAuth(topic)) {
       if (!params.jwt || this.isInvalidJwt(params.jwt)) {
-        params.jwt = await this.#getJwt("channel", { params, topic });
+        params.jwt = await this.#safeGetJwt("channel", { params, topic });
       }
 
       if (this.isInvalidJwt(params.jwt)) {
@@ -228,6 +228,18 @@ export default class Lasagna {
     }
 
     return { cxp, exp };
+  };
+
+  #safeGetJwt: GetJwtFn = async (jwtType, meta) => {
+    let jwt;
+
+    try {
+      jwt = await this.#getJwt(jwtType, meta);
+    } catch {
+      jwt = "";
+    }
+
+    return jwt;
   };
 
   #rejoinChannel = async ({ topic, params, callbacks }: ChannelHandle) => {
