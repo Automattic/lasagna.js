@@ -105,8 +105,9 @@ export default class Lasagna {
    */
 
   async initChannel(topic: Topic, params: Params = {}, callbacks?: ChannelCbs) {
+    this.leaveChannel(topic);
+
     if (typeof topic !== "string" || topic === "" || !this.#socket) {
-      this.leaveChannel(topic);
       return false;
     }
 
@@ -116,7 +117,6 @@ export default class Lasagna {
       }
 
       if (this.isInvalidJwt(params.jwt)) {
-        this.leaveChannel(topic);
         return false;
       }
     }
@@ -147,7 +147,7 @@ export default class Lasagna {
     };
   }
 
-  joinChannel(topic: Topic, callback: Callback = NOOP, doAuthedRejoin = true) {
+  joinChannel(topic: Topic, callback: Callback = NOOP, fullRejoinOk = true) {
     if (typeof topic !== "string" || topic === "" || !this.CHANNELS[topic]) {
       return false;
     }
@@ -169,7 +169,7 @@ export default class Lasagna {
           return;
         }
 
-        if (doAuthedRejoin) {
+        if (fullRejoinOk) {
           this.#eventEmitter.emit(
             "lasagna-rejoin-" + topic,
             this.CHANNELS[topic]
