@@ -31,7 +31,9 @@ describe("Socket", () => {
   test("initSocket/1 without jwt param", async () => {
     await lasagna.initSocket({ user_id: "dmte", email: "bob@example.com" });
     lasagna.connect();
-    expect(MockPhoenix.Socket).toHaveBeenCalledWith(url, { params: { jwt } });
+    expect(MockPhoenix.Socket).toHaveBeenCalledWith(url, {
+      params: expect.objectContaining({ jwt }),
+    });
     expect(mockSocketConnect).toHaveBeenCalledTimes(1);
   });
 
@@ -39,7 +41,9 @@ describe("Socket", () => {
     const params = { jwt: anotherJwt };
     await lasagna.initSocket(params);
     lasagna.connect();
-    expect(MockPhoenix.Socket).toHaveBeenCalledWith(url, { params });
+    expect(MockPhoenix.Socket).toHaveBeenCalledWith(url, {
+      params: expect.objectContaining({ jwt: anotherJwt }),
+    });
     expect(mockSocketConnect).toHaveBeenCalledTimes(1);
   });
 
@@ -65,7 +69,9 @@ describe("Socket", () => {
     };
     await lasagna.initSocket(params, callbacks);
     lasagna.connect();
-    expect(MockPhoenix.Socket).toHaveBeenCalledWith(url, { params });
+    expect(MockPhoenix.Socket).toHaveBeenCalledWith(url, {
+      params: expect.objectContaining({ jwt: anotherJwt }),
+    });
     expect(mockSocketOnOpen).toHaveBeenCalledTimes(1);
     expect(mockSocketOnOpen).toHaveBeenCalledWith(callbacks.onOpen);
     expect(mockSocketOnClose).toHaveBeenCalledTimes(1);

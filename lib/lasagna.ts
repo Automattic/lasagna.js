@@ -33,10 +33,27 @@ type SocketCbs = {
 };
 type Topic = string;
 
+/**
+ * Module variables
+ */
 const LASAGNA_URL = "wss://rt-api.wordpress.com/socket";
+
+let LASAGNA_JS_VERSION;
+
+try {
+  const fs = require("fs");
+  LASAGNA_JS_VERSION = fs.readFileSync("./dist/version", "utf8").trim();
+} catch {
+  LASAGNA_JS_VERSION = "unknown";
+}
+
+const LASAGNA_JS_UA = "lasagna.js/" + LASAGNA_JS_VERSION;
 const NO_AUTH = "no_auth";
 const NOOP = () => undefined;
 
+/**
+ * Lasagna.js
+ */
 export default class Lasagna {
   CHANNELS: ChannelMap;
   #eventEmitter: EventEmitter;
@@ -67,7 +84,9 @@ export default class Lasagna {
       }
     }
 
-    this.#socket = new Socket(this.#lasagnaUrl, { params: { jwt } });
+    this.#socket = new Socket(this.#lasagnaUrl, {
+      params: { jwt, user_agent: LASAGNA_JS_UA },
+    });
 
     if (callbacks && callbacks.onOpen) {
       this.#socket.onOpen(callbacks.onOpen);
@@ -121,7 +140,10 @@ export default class Lasagna {
       }
     }
 
-    const channel = this.#socket.channel(topic, { jwt: params.jwt });
+    const channel = this.#socket.channel(topic, {
+      jwt: params.jwt,
+      user_agent: LASAGNA_JS_UA,
+    });
 
     if (callbacks && callbacks.onError) {
       channel.onError(callbacks.onError);
@@ -147,8 +169,12 @@ export default class Lasagna {
     };
   }
 
-  joinChannel(topic: Topic, callback: Callback = NOOP, fullRejoinOk = true) {
-    if (typeof topic !== "string" || topic === "" || !this.CHANNELS[topic]) {
+  joinChannel(topic: Topic, callback: Callback = NOOP) {
+    if (typeof topic !== "string" || topic === "") {
+      return false;
+    }
+
+    if (!this.CHANNELS[topic]) {
       return false;
     }
 
@@ -169,14 +195,10 @@ export default class Lasagna {
           return;
         }
 
-        if (fullRejoinOk) {
-          this.#eventEmitter.emit(
-            "lasagna-rejoin-" + topic,
-            this.CHANNELS[topic]
-          );
-        } else {
-          this.leaveChannel(topic);
-        }
+        this.#eventEmitter.emit(
+          "lasagna-rejoin-" + topic,
+          this.CHANNELS[topic]
+        );
       });
   }
 
@@ -255,7 +277,7 @@ export default class Lasagna {
     const onJoinCb = this.CHANNELS[topic].callbacks?.onJoin;
     this.leaveChannel(topic);
     await this.initChannel(topic, params, callbacks);
-    this.joinChannel(topic, onJoinCb, false);
+    this.joinChannel(topic, onJoinCb);
   };
 
   #reconnectSocket = async (params: Params, callbacks?: SocketCbs) => {
