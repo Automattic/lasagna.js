@@ -4,6 +4,7 @@
 import { Channel, Socket } from "phoenix";
 import { EventEmitter } from "events";
 import JWT from "jwt-decode";
+import fs from "fs";
 
 /**
  * TS types
@@ -33,9 +34,26 @@ type SocketCbs = {
 };
 type Topic = string;
 
+/**
+ * Module variables
+ */
 const LASAGNA_URL = "wss://rt-api.wordpress.com/socket";
-const NO_AUTH = "no_auth";
 
+let LASAGNA_JS_VERSION;
+
+try {
+  LASAGNA_JS_VERSION = fs.readFileSync("./dist/version", "utf8").trim();
+} catch {
+  LASAGNA_JS_VERSION = "unknown";
+}
+
+const LASAGNA_JS_UA = "lasagna.js/" + LASAGNA_JS_VERSION;
+const NO_AUTH = "no_auth";
+const NOOP = () => undefined;
+
+/**
+ * Lasagna.js
+ */
 export default class Lasagna {
   CHANNELS: ChannelMap;
   #eventEmitter: EventEmitter;
@@ -58,14 +76,17 @@ export default class Lasagna {
     let jwt = params.jwt;
 
     if (this.isInvalidJwt(jwt)) {
-      jwt = await this.#getJwt("socket", { params });
+      jwt = await this.#safeGetJwt("socket", { params });
 
       if (this.isInvalidJwt(jwt)) {
+        this.disconnect();
         return false;
       }
     }
 
-    this.#socket = new Socket(this.#lasagnaUrl, { params: { jwt } });
+    this.#socket = new Socket(this.#lasagnaUrl, {
+      params: { jwt, user_agent: LASAGNA_JS_UA },
+    });
 
     if (callbacks && callbacks.onOpen) {
       this.#socket.onOpen(callbacks.onOpen);
@@ -103,13 +124,15 @@ export default class Lasagna {
    */
 
   async initChannel(topic: Topic, params: Params = {}, callbacks?: ChannelCbs) {
+    this.leaveChannel(topic);
+
     if (typeof topic !== "string" || topic === "" || !this.#socket) {
       return false;
     }
 
     if (this.shouldAuth(topic)) {
       if (!params.jwt || this.isInvalidJwt(params.jwt)) {
-        params.jwt = await this.#getJwt("channel", { params, topic });
+        params.jwt = await this.#safeGetJwt("channel", { params, topic });
       }
 
       if (this.isInvalidJwt(params.jwt)) {
@@ -117,7 +140,10 @@ export default class Lasagna {
       }
     }
 
-    const channel = this.#socket.channel(topic, { jwt: params.jwt });
+    const channel = this.#socket.channel(topic, {
+      jwt: params.jwt,
+      user_agent: LASAGNA_JS_UA,
+    });
 
     if (callbacks && callbacks.onError) {
       channel.onError(callbacks.onError);
@@ -143,8 +169,12 @@ export default class Lasagna {
     };
   }
 
-  async joinChannel(topic: Topic, callback: Callback = () => undefined) {
-    if (typeof topic !== "string" || topic === "" || !this.CHANNELS[topic]) {
+  joinChannel(topic: Topic, callback: Callback = NOOP) {
+    if (typeof topic !== "string" || topic === "") {
+      return false;
+    }
+
+    if (!this.CHANNELS[topic]) {
       return false;
     }
 
@@ -156,21 +186,19 @@ export default class Lasagna {
     this.CHANNELS[topic].channel
       .join()
       .receive("ok", () => callback())
-      .receive("error", async () => {
+      .receive("error", () => {
         if (!this.shouldAuth(topic)) {
           return;
         }
 
-        if (this.isInvalidJwt(this.CHANNELS[topic].params.jwt)) {
-          this.CHANNELS[topic].params.jwt = await this.#getJwt("channel", {
-            params: this.CHANNELS[topic].params,
-            topic,
-          });
+        if (!this.isInvalidJwt(this.CHANNELS[topic].params.jwt)) {
+          return;
         }
 
-        if (this.isInvalidJwt(this.CHANNELS[topic].params.jwt)) {
-          this.leaveChannel(topic);
-        }
+        this.#eventEmitter.emit(
+          "lasagna-rejoin-" + topic,
+          this.CHANNELS[topic]
+        );
       });
   }
 
@@ -207,9 +235,7 @@ export default class Lasagna {
   }
 
   leaveAllChannels() {
-    Object.keys(this.CHANNELS).forEach((key) =>
-      this.CHANNELS[key].channel.leave()
-    );
+    Object.keys(this.CHANNELS).forEach((topic) => this.leaveChannel(topic));
     this.CHANNELS = {};
   }
 
@@ -235,9 +261,21 @@ export default class Lasagna {
     return { cxp, exp };
   };
 
+  #safeGetJwt: GetJwtFn = async (jwtType, meta) => {
+    let jwt;
+
+    try {
+      jwt = await this.#getJwt(jwtType, meta);
+    } catch {
+      jwt = "";
+    }
+
+    return jwt;
+  };
+
   #rejoinChannel = async ({ topic, params, callbacks }: ChannelHandle) => {
-    this.#eventEmitter.removeAllListeners("lasagna-rejoin-" + topic);
     const onJoinCb = this.CHANNELS[topic].callbacks?.onJoin;
+    this.leaveChannel(topic);
     await this.initChannel(topic, params, callbacks);
     this.joinChannel(topic, onJoinCb);
   };
