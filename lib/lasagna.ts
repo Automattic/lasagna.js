@@ -35,6 +35,7 @@ type Topic = string;
 
 const LASAGNA_URL = "wss://rt-api.wordpress.com/socket";
 const NO_AUTH = "no_auth";
+const NOOP = () => undefined;
 
 export default class Lasagna {
   CHANNELS: ChannelMap;
@@ -146,7 +147,7 @@ export default class Lasagna {
     };
   }
 
-  joinChannel(topic: Topic, callback: Callback = () => undefined) {
+  joinChannel(topic: Topic, callback: Callback = NOOP, authedRejoin = true) {
     if (typeof topic !== "string" || topic === "" || !this.CHANNELS[topic]) {
       return false;
     }
@@ -164,10 +165,14 @@ export default class Lasagna {
           return;
         }
 
-        this.#eventEmitter.emit(
-          "lasagna-rejoin-" + topic,
-          this.CHANNELS[topic]
-        );
+        if (authedRejoin) {
+          this.#eventEmitter.emit(
+            "lasagna-rejoin-" + topic,
+            this.CHANNELS[topic]
+          );
+        } else {
+          this.leaveChannel(topic);
+        }
       });
   }
 
@@ -246,7 +251,7 @@ export default class Lasagna {
     const onJoinCb = this.CHANNELS[topic].callbacks?.onJoin;
     this.leaveChannel(topic);
     await this.initChannel(topic, params, callbacks);
-    this.joinChannel(topic, onJoinCb);
+    this.joinChannel(topic, onJoinCb, false);
   };
 
   #reconnectSocket = async (params: Params, callbacks?: SocketCbs) => {
