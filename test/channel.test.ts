@@ -2,6 +2,7 @@
  * Mocks
  */
 import MockPhoenix, {
+  eventOnWire,
   mockChannelJoin,
   mockChannelLeave,
   mockChannelOn,
