@@ -36,6 +36,7 @@ type Topic = string;
 /**
  * Module variables
  */
+// tslint:disable:no-var-requires
 const { version } = require("../package.json");
 const LASAGNA_JS_UA = "lasagna.js/" + version;
 const LASAGNA_URL = "wss://rt-api.wordpress.com/socket";
