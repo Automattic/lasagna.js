@@ -13,12 +13,16 @@ type ChannelCbs = { onClose?: Callback; onError?: Callback; onJoin?: Callback };
 type ChannelHandle = {
   callbacks: ChannelCbs | undefined;
   channel: Channel;
+  eventBindings: EventBindingsMap;
   params: Params;
   topic: Topic;
 };
 type ChannelMap = { [topic: string]: ChannelHandle };
 type DecodedJWT = { cxp?: number; exp: number; iat: number; iss: string };
 type Event = string;
+type EventBindingsMap = {
+  [event: string]: Array<Callback>;
+};
 type GetJwtFn = (
   type: "socket" | "channel",
   meta: GetJwtFnMetaParam
@@ -115,7 +119,12 @@ export default class Lasagna {
    * Channel
    */
 
-  async initChannel(topic: Topic, params: Params = {}, callbacks?: ChannelCbs) {
+  async initChannel(
+    topic: Topic,
+    params: Params = {},
+    callbacks: ChannelCbs = {},
+    eventBindings: EventBindingsMap = {}
+  ) {
     this.leaveChannel(topic);
 
     if (typeof topic !== "string" || topic === "" || !this.#socket) {
@@ -137,28 +146,27 @@ export default class Lasagna {
       user_agent: LASAGNA_JS_UA,
     });
 
-    if (callbacks && callbacks.onError) {
+    if (callbacks.onError) {
       channel.onError(callbacks.onError);
     }
 
-    if (callbacks && callbacks.onClose) {
+    if (callbacks.onClose) {
       channel.onClose(callbacks.onClose);
     }
 
-    channel.on("banned", () => this.leaveChannel(topic));
-
-    channel.on("kicked", () =>
-      this.#eventEmitter.emit("lasagna-rejoin-" + topic, this.CHANNELS[topic])
-    );
-
-    this.#eventEmitter.once("lasagna-rejoin-" + topic, this.#rejoinChannel);
+    eventBindings["banned"] = [() => this.leaveChannel(topic)];
+    eventBindings["kicked"] = [() => this.#emitChannelRejoin(topic)];
 
     this.CHANNELS[topic] = {
       callbacks,
       channel,
+      eventBindings,
       params,
       topic,
     };
+
+    this.#bulkBindEvents(topic, eventBindings);
+    this.#addChannelRejoinListener(topic);
   }
 
   joinChannel(topic: Topic, callback: Callback = NOOP) {
@@ -213,11 +221,27 @@ export default class Lasagna {
   }
 
   registerEventHandler(topic: Topic, event: Event, callback: Callback) {
-    return this.CHANNELS[topic]?.channel.on(event, callback);
+    if (!this.CHANNELS[topic]) {
+      return false;
+    }
+
+    const existingBindings = this.CHANNELS[topic].eventBindings[event] || [];
+
+    this.CHANNELS[topic].eventBindings = {
+      ...this.CHANNELS[topic].eventBindings,
+      [event]: [...existingBindings, callback],
+    };
+
+    return this.CHANNELS[topic].channel.on(event, callback);
   }
 
-  unregisterEventHandler(topic: Topic, event: Event, ref: number) {
-    this.CHANNELS[topic]?.channel.off(event, ref);
+  unregisterAllEventHandlers(topic: Topic, event: Event) {
+    if (!this.CHANNELS[topic]) {
+      return false;
+    }
+
+    this.CHANNELS[topic].channel.off(event);
+    delete this.CHANNELS[topic].eventBindings[event];
   }
 
   leaveChannel(topic: Topic) {
@@ -234,6 +258,22 @@ export default class Lasagna {
   /**
    * Private methods
    */
+
+  #addChannelRejoinListener = (topic: Topic) => {
+    this.#eventEmitter.once("lasagna-rejoin-" + topic, this.#rejoinChannel);
+  };
+
+  #bulkBindEvents = (topic: Topic, eventBindings: EventBindingsMap) => {
+    Object.entries(eventBindings).forEach(([event, callbacks]) =>
+      callbacks.forEach((callback) =>
+        this.CHANNELS[topic].channel.on(event, callback)
+      )
+    );
+  };
+
+  #emitChannelRejoin = (topic: Topic) => {
+    this.#eventEmitter.emit("lasagna-rejoin-" + topic, this.CHANNELS[topic]);
+  };
 
   #getJwtExps = (jwt: string) => {
     let cxp;
@@ -265,10 +305,15 @@ export default class Lasagna {
     return jwt;
   };
 
-  #rejoinChannel = async ({ topic, params, callbacks }: ChannelHandle) => {
+  #rejoinChannel = async ({
+    topic,
+    params,
+    callbacks,
+    eventBindings,
+  }: ChannelHandle) => {
     const onJoinCb = this.CHANNELS[topic].callbacks?.onJoin;
     this.leaveChannel(topic);
-    await this.initChannel(topic, params, callbacks);
+    await this.initChannel(topic, params, callbacks, eventBindings);
     this.joinChannel(topic, onJoinCb);
   };
 
