@@ -264,11 +264,17 @@ export default class Lasagna {
   };
 
   #bulkBindEvents = (topic: Topic, eventBindings: EventBindingsMap) => {
-    Object.entries(eventBindings).forEach(([event, callbacks]) =>
+    if (!this.CHANNELS[topic] || !this.CHANNELS[topic].channel) {
+      return false;
+    }
+
+    Object.entries(eventBindings).forEach(([event, callbacks]) => {
+      this.CHANNELS[topic].channel.off(event);
+
       callbacks.forEach((callback) =>
         this.CHANNELS[topic].channel.on(event, callback)
-      )
-    );
+      );
+    });
   };
 
   #emitChannelRejoin = (topic: Topic) => {
