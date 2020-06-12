@@ -6,6 +6,7 @@ import MockPhoenix, {
   mockChannelJoin,
   mockChannelLeave,
   mockChannelOn,
+  mockChannelOff,
   mockChannelPush,
 } from "./mocks/phoenix";
 jest.mock("phoenix", () => MockPhoenix);
@@ -36,12 +37,15 @@ describe("Channel", () => {
 
   test("initChannel/2 without jwt param", async () => {
     await lasagna.initChannel("test:thing2", { private: "thingy" });
+    const handle = lasagna.CHANNELS["test:thing2"];
 
-    expect(lasagna.CHANNELS["test:thing2"].channel).toBeDefined();
-    expect(lasagna.CHANNELS["test:thing2"]).toMatchObject({
+    expect(handle.channel).toBeDefined();
+    expect(handle).toMatchObject({
       params: { jwt: jwtRemoteFetched, private: "thingy" },
       topic: "test:thing2",
     });
+    expect(handle.eventBindings).toHaveProperty("banned");
+    expect(handle.eventBindings).toHaveProperty("kicked");
   });
 
   test("initChannel/2 with jwt param", async () => {
@@ -137,11 +141,42 @@ describe("Channel", () => {
     expect(mockChannelPush).toHaveBeenCalledWith("new_sneech", { whatev: "a" });
   });
 
-  test("registerEventHandler/2", () => {
+  test("registerEventHandler/3", () => {
     const cb = () => "hola!";
     lasagna.registerEventHandler("test:thing3", "starred_sneech", cb);
     expect(mockChannelOn).toHaveBeenCalledTimes(1);
     expect(mockChannelOn).toHaveBeenCalledWith("starred_sneech", cb);
+    expect(lasagna.CHANNELS["test:thing3"].eventBindings).toMatchObject({
+      starred_sneech: [cb],
+    });
+  });
+
+  test("unregisterAllEventHandlers/2", () => {
+    const cb = () => "hola!";
+    const cb2 = () => "hola2!";
+
+    lasagna.registerEventHandler("test:thing3", "starred_sneech", cb);
+    lasagna.registerEventHandler("test:thing3", "unstarred_sneech", cb);
+    lasagna.registerEventHandler("test:thing3", "unstarred_sneech", cb2);
+    expect(mockChannelOn).toHaveBeenCalledTimes(3);
+    expect(mockChannelOn).toHaveBeenCalledWith("starred_sneech", cb);
+    expect(mockChannelOn).toHaveBeenCalledWith("unstarred_sneech", cb);
+    expect(lasagna.CHANNELS["test:thing3"].eventBindings).toMatchObject({
+      starred_sneech: [cb],
+    });
+    expect(lasagna.CHANNELS["test:thing3"].eventBindings).toMatchObject({
+      unstarred_sneech: [cb, cb2],
+    });
+
+    lasagna.unregisterAllEventHandlers("test:thing3", "unstarred_sneech");
+    expect(mockChannelOff).toHaveBeenCalledTimes(1);
+    expect(mockChannelOff).toHaveBeenCalledWith("unstarred_sneech");
+    expect(lasagna.CHANNELS["test:thing3"].eventBindings).toMatchObject({
+      starred_sneech: [cb],
+    });
+    expect(lasagna.CHANNELS["test:thing3"].eventBindings).not.toHaveProperty(
+      "unstarred_sneech"
+    );
   });
 
   test("leaveChannel/1", () => {
