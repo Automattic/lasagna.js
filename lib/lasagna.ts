@@ -21,7 +21,7 @@ type ChannelMap = { [topic: string]: ChannelHandle };
 type DecodedJWT = { cxp?: number; exp: number; iat: number; iss: string };
 type Event = string;
 type EventBindingsMap = {
-  [event: string]: Array<Callback>;
+  [event: string]: Callback[];
 };
 type GetJwtFn = (
   type: "socket" | "channel",
@@ -154,8 +154,8 @@ export default class Lasagna {
       channel.onClose(callbacks.onClose);
     }
 
-    eventBindings["banned"] = [() => this.leaveChannel(topic)];
-    eventBindings["kicked"] = [() => this.#emitChannelRejoin(topic)];
+    eventBindings.banned = [() => this.leaveChannel(topic)];
+    eventBindings.kicked = [() => this.#emitChannelRejoin(topic)];
 
     this.CHANNELS[topic] = {
       callbacks,
