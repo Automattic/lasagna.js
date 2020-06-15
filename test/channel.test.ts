@@ -35,7 +35,7 @@ describe("Channel", () => {
     jest.clearAllMocks();
   });
 
-  test("initChannel/2 without jwt param", async () => {
+  test("initChannel/4 without jwt param", async () => {
     await lasagna.initChannel("test:thing2", { private: "thingy" });
     const handle = lasagna.CHANNELS["test:thing2"];
 
@@ -48,7 +48,7 @@ describe("Channel", () => {
     expect(handle.eventBindings).toHaveProperty("kicked");
   });
 
-  test("initChannel/2 with jwt param", async () => {
+  test("initChannel/4 with jwt param", async () => {
     await lasagna.initChannel("test:thing2", { jwt: jwtExplicitPassed });
 
     expect(lasagna.CHANNELS["test:thing2"].channel).toBeDefined();
@@ -58,7 +58,7 @@ describe("Channel", () => {
     });
   });
 
-  test("initChannel/2 with expired jwt param", async () => {
+  test("initChannel/4 with expired jwt param", async () => {
     await lasagna.initChannel("test:thing2", { jwt: jwtExpired });
 
     expect(lasagna.CHANNELS["test:thing2"].channel).toBeDefined();
@@ -68,7 +68,7 @@ describe("Channel", () => {
     });
   });
 
-  test("initChannel/2 with malformed jwt param", async () => {
+  test("initChannel/4 with malformed jwt param", async () => {
     await lasagna.initChannel("test:thing2", { jwt: "blahblah" });
 
     expect(lasagna.CHANNELS["test:thing2"].channel).toBeDefined();
@@ -78,12 +78,12 @@ describe("Channel", () => {
     });
   });
 
-  test("initChannel/2 with no socket", async () => {
+  test("initChannel/4 with no socket", async () => {
     const burntLasagna = new Lasagna(() => Promise.resolve("whatever"), url);
     expect(await burntLasagna.initChannel("test:thing5")).toBe(false);
   });
 
-  test("initChannel/2 with non-string JWT fetch response", async () => {
+  test("initChannel/4 with non-string JWT fetch response", async () => {
     // @ts-ignore we want this type mismatch for the test scenario
     const lasagna2 = new Lasagna(() => Promise.resolve({ notajwt: 1 }), url);
     await lasagna2.initSocket({ jwt: jwtExplicitPassed });
@@ -171,12 +171,12 @@ describe("Channel", () => {
     lasagna.unregisterAllEventHandlers("test:thing3", "unstarred_sneech");
     expect(mockChannelOff).toHaveBeenCalledTimes(1);
     expect(mockChannelOff).toHaveBeenCalledWith("unstarred_sneech");
-    expect(lasagna.CHANNELS["test:thing3"].eventBindings).toMatchObject({
-      starred_sneech: [cb],
-    });
     expect(lasagna.CHANNELS["test:thing3"].eventBindings).not.toHaveProperty(
       "unstarred_sneech"
     );
+    expect(lasagna.CHANNELS["test:thing3"].eventBindings).toMatchObject({
+      starred_sneech: [cb],
+    });
   });
 
   test("leaveChannel/1", () => {
