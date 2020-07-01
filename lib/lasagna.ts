@@ -141,10 +141,7 @@ export default class Lasagna {
       }
     }
 
-    const channel = this.#socket.channel(topic, {
-      jwt: params.jwt,
-      user_agent: LASAGNA_JS_UA,
-    });
+    const channel = this.#socket.channel(topic, { jwt: params.jwt });
 
     if (callbacks.onError) {
       channel.onError(callbacks.onError);
