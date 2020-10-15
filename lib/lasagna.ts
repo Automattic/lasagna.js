@@ -1,20 +1,26 @@
 /**
  * External dependencies
  */
-import { Channel, Socket } from "phoenix";
+import { Channel, Socket, Presence } from "phoenix";
 import { EventEmitter } from "events";
 import JWT from "jwt-decode";
 
 /**
  * TS types
  */
-type Callback = () => any;
-type ChannelCbs = { onClose?: Callback; onError?: Callback; onJoin?: Callback };
+type Callback = (...args: any[]) => void;
+type ChannelCbs = {
+  onClose?: Callback;
+  onError?: Callback;
+  onJoin?: Callback;
+  onPresenceSync?: Callback;
+};
 type ChannelHandle = {
   callbacks: ChannelCbs | undefined;
   channel: Channel;
   eventBindings: EventBindingsMap;
   params: Params;
+  presence?: Presence;
   topic: Topic;
 };
 type ChannelMap = { [topic: string]: ChannelHandle };
@@ -166,6 +172,16 @@ export default class Lasagna {
     this.#addChannelRejoinListener(topic);
   }
 
+  initPresence(topic: Topic, syncCb: Callback) {
+    if (!this.CHANNELS[topic]?.channel || !syncCb) {
+      return false;
+    }
+
+    const presence = new Presence(this.CHANNELS[topic].channel);
+    presence.onSync(() => syncCb(presence));
+    this.CHANNELS[topic].presence = presence;
+  }
+
   joinChannel(topic: Topic, callback: Callback = NOOP) {
     if (typeof topic !== "string" || topic === "") {
       return false;
@@ -314,9 +330,16 @@ export default class Lasagna {
     callbacks,
     eventBindings,
   }: ChannelHandle) => {
-    const onJoinCb = this.CHANNELS[topic].callbacks?.onJoin;
+    const { onJoin: onJoinCb, onPresenceSync: syncCb } =
+      this.CHANNELS[topic].callbacks || {};
+
     this.leaveChannel(topic);
     await this.initChannel(topic, params, callbacks, eventBindings);
+
+    if (syncCb) {
+      this.initPresence(topic, syncCb);
+    }
+
     this.joinChannel(topic, onJoinCb);
   };
 
