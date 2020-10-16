@@ -353,9 +353,9 @@ export default class Lasagna {
 
   #shouldApplyPresenceDiff = (event: Event, msgTopic: Topic, topic: Topic) => {
     return (
-      event == "presence_diff" &&
-      (msgTopic == "presence:private:" + topic ||
-        msgTopic == "presence:public:" + topic)
+      event === "presence_diff" &&
+      (msgTopic === "presence:private:" + topic ||
+        msgTopic === "presence:public:" + topic)
     );
   };
 
