@@ -13,14 +13,14 @@ type ChannelCbs = {
   onClose?: Callback;
   onError?: Callback;
   onJoin?: Callback;
-  onPresenceSync?: Callback;
 };
 type ChannelHandle = {
-  callbacks: ChannelCbs | undefined;
+  callbacks: ChannelCbs;
   channel: Channel;
   eventBindings: EventBindingsMap;
   params: Params;
   presence?: Presence;
+  presenceCallbacks?: PresenceCbs;
   topic: Topic;
 };
 type ChannelMap = { [topic: string]: ChannelHandle };
@@ -36,6 +36,11 @@ type GetJwtFn = (
 type GetJwtFnMetaParam = { params: Params; topic?: Topic };
 type Params = { jwt?: string; [key: string]: any };
 type Payload = object;
+type PresenceCbs = {
+  onJoin?: Callback;
+  onLeave?: Callback;
+  onSync?: Callback;
+};
 type SocketCbs = {
   onClose?: Callback;
   onError?: Callback;
@@ -172,13 +177,35 @@ export default class Lasagna {
     this.#addChannelRejoinListener(topic);
   }
 
-  initPresence(topic: Topic, syncCb: Callback) {
-    if (!this.CHANNELS[topic]?.channel || !syncCb) {
+  initPresence(topic: Topic, callbacks: PresenceCbs = {}) {
+    if (!this.#socket || !this.CHANNELS[topic]?.channel) {
       return false;
     }
 
     const presence = new Presence(this.CHANNELS[topic].channel);
-    presence.onSync(() => syncCb(presence));
+
+    if (callbacks.onSync) {
+      const syncCb = callbacks.onSync;
+      presence.onSync(() => syncCb(presence));
+    }
+
+    if (callbacks.onJoin) {
+      presence.onJoin(callbacks.onJoin);
+    }
+
+    if (callbacks.onLeave) {
+      presence.onLeave(callbacks.onLeave);
+    }
+
+    this.#socket.onMessage(
+      ({ topic: msgTopic, event, payload, ref, join_ref }) => {
+        if (this.#shouldApplyPresenceDiff(event, msgTopic, topic)) {
+          // @ts-ignore private (untyped) Channel API, used intentionally
+          this.CHANNELS[topic].channel.trigger(event, payload, ref, join_ref);
+        }
+      }
+    );
+
     this.CHANNELS[topic].presence = presence;
   }
 
@@ -324,20 +351,28 @@ export default class Lasagna {
     return jwt;
   };
 
+  #shouldApplyPresenceDiff = (event: Event, msgTopic: Topic, topic: Topic) => {
+    return (
+      event == "presence_diff" &&
+      (msgTopic == "presence:private:" + topic ||
+        msgTopic == "presence:public:" + topic)
+    );
+  };
+
   #rejoinChannel = async ({
     topic,
     params,
     callbacks,
     eventBindings,
   }: ChannelHandle) => {
-    const { onJoin: onJoinCb, onPresenceSync: syncCb } =
-      this.CHANNELS[topic].callbacks || {};
+    const onJoinCb = this.CHANNELS[topic].callbacks?.onJoin;
+    const presenceCbs = this.CHANNELS[topic].presenceCallbacks;
 
     this.leaveChannel(topic);
     await this.initChannel(topic, params, callbacks, eventBindings);
 
-    if (syncCb) {
-      this.initPresence(topic, syncCb);
+    if (presenceCbs) {
+      this.initPresence(topic, presenceCbs);
     }
 
     this.joinChannel(topic, onJoinCb);
