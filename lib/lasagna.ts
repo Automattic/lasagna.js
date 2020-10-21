@@ -1,20 +1,26 @@
 /**
  * External dependencies
  */
-import { Channel, Socket } from "phoenix";
+import { Channel, Socket, Presence } from "phoenix";
 import { EventEmitter } from "events";
 import JWT from "jwt-decode";
 
 /**
  * TS types
  */
-type Callback = () => any;
-type ChannelCbs = { onClose?: Callback; onError?: Callback; onJoin?: Callback };
+type Callback = (...args: any[]) => void;
+type ChannelCbs = {
+  onClose?: Callback;
+  onError?: Callback;
+  onJoin?: Callback;
+};
 type ChannelHandle = {
-  callbacks: ChannelCbs | undefined;
+  callbacks: ChannelCbs;
   channel: Channel;
   eventBindings: EventBindingsMap;
   params: Params;
+  presence?: Presence;
+  presenceCallbacks?: PresenceCbs;
   topic: Topic;
 };
 type ChannelMap = { [topic: string]: ChannelHandle };
@@ -30,6 +36,11 @@ type GetJwtFn = (
 type GetJwtFnMetaParam = { params: Params; topic?: Topic };
 type Params = { jwt?: string; [key: string]: any };
 type Payload = object;
+type PresenceCbs = {
+  onJoin?: Callback;
+  onLeave?: Callback;
+  onSync?: Callback;
+};
 type SocketCbs = {
   onClose?: Callback;
   onError?: Callback;
@@ -164,6 +175,38 @@ export default class Lasagna {
 
     this.#bulkBindEvents(topic, eventBindings);
     this.#addChannelRejoinListener(topic);
+  }
+
+  initPresence(topic: Topic, callbacks: PresenceCbs = {}) {
+    if (!this.#socket || !this.CHANNELS[topic]?.channel) {
+      return false;
+    }
+
+    const presence = new Presence(this.CHANNELS[topic].channel);
+
+    if (callbacks.onSync) {
+      const syncCb = callbacks.onSync;
+      presence.onSync(() => syncCb(presence));
+    }
+
+    if (callbacks.onJoin) {
+      presence.onJoin(callbacks.onJoin);
+    }
+
+    if (callbacks.onLeave) {
+      presence.onLeave(callbacks.onLeave);
+    }
+
+    this.#socket.onMessage(
+      ({ topic: msgTopic, event, payload, ref, join_ref }) => {
+        if (this.#shouldApplyPresenceDiff(event, msgTopic, topic)) {
+          // @ts-ignore private (untyped) Channel API, used intentionally
+          this.CHANNELS[topic].channel.trigger(event, payload, ref, join_ref);
+        }
+      }
+    );
+
+    this.CHANNELS[topic].presence = presence;
   }
 
   joinChannel(topic: Topic, callback: Callback = NOOP) {
@@ -308,6 +351,14 @@ export default class Lasagna {
     return jwt;
   };
 
+  #shouldApplyPresenceDiff = (event: Event, msgTopic: Topic, topic: Topic) => {
+    return (
+      event === "presence_diff" &&
+      (msgTopic === "presence:private:" + topic ||
+        msgTopic === "presence:public:" + topic)
+    );
+  };
+
   #rejoinChannel = async ({
     topic,
     params,
@@ -315,8 +366,15 @@ export default class Lasagna {
     eventBindings,
   }: ChannelHandle) => {
     const onJoinCb = this.CHANNELS[topic].callbacks?.onJoin;
+    const presenceCbs = this.CHANNELS[topic].presenceCallbacks;
+
     this.leaveChannel(topic);
     await this.initChannel(topic, params, callbacks, eventBindings);
+
+    if (presenceCbs) {
+      this.initPresence(topic, presenceCbs);
+    }
+
     this.joinChannel(topic, onJoinCb);
   };
 
