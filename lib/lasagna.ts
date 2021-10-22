@@ -275,6 +275,18 @@ export default class Lasagna {
     return this.CHANNELS[topic].channel.on(event, callback);
   }
 
+  unregisterEventHandler(topic: Topic, event: Event, callback: Callback, eventListenerRef: number) {
+    if (!this.CHANNELS[topic]) {
+      return false;
+    }
+
+    this.CHANNELS[topic].channel.off(event, eventListenerRef);
+
+    this.CHANNELS[topic].eventBindings[event] = this.CHANNELS[topic].eventBindings[event].filter(
+        ( eventBinding ) => eventBinding !== callback
+    );
+  }
+
   unregisterAllEventHandlers(topic: Topic, event: Event) {
     if (!this.CHANNELS[topic]) {
       return false;

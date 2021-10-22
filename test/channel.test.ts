@@ -151,6 +151,30 @@ describe("Channel", () => {
     });
   });
 
+  test("unregisterEventHandler/4", () => {
+    const cb = () => "hola!";
+    let ref = lasagna.registerEventHandler("test:thing3", "starred_sneech", cb);
+
+    expect(mockChannelOn).toHaveBeenCalledTimes(1);
+    expect(mockChannelOn).toHaveBeenCalledWith("starred_sneech", cb);
+    expect(lasagna.CHANNELS["test:thing3"].eventBindings).toMatchObject({
+      starred_sneech: [cb],
+    });
+
+    // To make lint happy.
+    if (!ref) {
+      ref = 0;
+    }
+
+    lasagna.unregisterEventHandler("test:thing3", "starred_sneech", cb, ref);
+
+    expect(mockChannelOff).toHaveBeenCalledTimes(1);
+    expect(mockChannelOff).toHaveBeenCalledWith("starred_sneech", ref);
+    expect(lasagna.CHANNELS["test:thing3"].eventBindings).toMatchObject({
+      starred_sneech: [],
+    });
+  });
+
   test("unregisterAllEventHandlers/2", () => {
     const cb = () => "hola!";
     const cb2 = () => "hola2!";
