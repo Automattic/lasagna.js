@@ -276,7 +276,7 @@ export default class Lasagna {
   }
 
   unregisterEventHandler(topic: Topic, event: Event, callback: Callback, eventListenerRef: number) {
-    if (!this.CHANNELS[topic] || !callback || !eventListenerRef) {
+    if (!this.CHANNELS[topic] || !callback || Number.isNaN(eventListenerRef)) {
       return false;
     }
 
