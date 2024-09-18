@@ -30,7 +30,7 @@
     "access": "public"
   },
   "dependencies": {
-    "jwt-decode": "^3.0.0",
+    "jwt-decode": "^4.0.0",
     "phoenix": "^1.5.1"
   },
   "devDependencies": {
