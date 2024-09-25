@@ -80,10 +80,11 @@ export default class Lasagna {
    */
 
   async initSocket(params: Params = {}, callbacks?: SocketCbs) {
-    let jwt = params.jwt;
+    let { jwt, ...jwtParams } = params;
+    let jwtRequest: Promise<string> | null = null;
 
     if (this.isInvalidJwt(jwt)) {
-      jwt = await this.#safeGetJwt("socket", { params });
+      jwt = await this.#safeGetJwt("socket", { params: jwtParams });
 
       if (this.isInvalidJwt(jwt)) {
         this.disconnect();
@@ -92,7 +93,7 @@ export default class Lasagna {
     }
 
     this.#socket = new Socket(this.#lasagnaUrl, {
-      params: { jwt, user_agent: LASAGNA_JS_UA },
+      params: () => ({ jwt, user_agent: LASAGNA_JS_UA }),
     });
 
     if (callbacks && callbacks.onOpen) {
@@ -103,13 +104,21 @@ export default class Lasagna {
       this.#socket.onClose(callbacks.onClose);
     }
 
-    this.#socket.onError(() => {
+    this.#socket.onError(async () => {
       if (callbacks && callbacks.onError) {
         callbacks.onError();
       }
 
       if (this.isInvalidJwt(jwt)) {
-        this.#reconnectSocket(params, callbacks);
+        // Refresh the token so that Phoenix `reconnectTimer` can pick it up on next try
+        if (!jwtRequest) {
+          jwtRequest = this.#safeGetJwt("socket", { params: jwtParams });
+        }
+        jwt = await jwtRequest;
+        jwtRequest = null;
+        if (this.isInvalidJwt(jwt)) {
+          this.disconnect();
+        }
       }
     });
   }
@@ -376,13 +385,6 @@ export default class Lasagna {
     }
 
     this.joinChannel(topic, onJoinCb);
-  };
-
-  #reconnectSocket = async (params: Params, callbacks?: SocketCbs) => {
-    this.disconnect();
-    delete params.jwt;
-    await this.initSocket(params, callbacks);
-    this.connect();
   };
 }
 
