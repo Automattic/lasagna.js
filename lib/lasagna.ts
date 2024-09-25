@@ -80,7 +80,8 @@ export default class Lasagna {
    */
 
   async initSocket(params: Params = {}, callbacks?: SocketCbs) {
-    let { jwt, ...jwtParams } = params;
+    const { jwt: initialJwt, ...jwtParams } = params;
+    let jwt = initialJwt;
     let jwtRequest: Promise<string> | null = null;
 
     if (this.isInvalidJwt(jwt)) {
