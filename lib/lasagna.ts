@@ -3,7 +3,7 @@
  */
 import { Channel, Socket, Presence } from "phoenix";
 import { EventEmitter } from "events";
-import JWT from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 
 /**
  * TS types
@@ -36,6 +36,13 @@ type GetJwtFn = (
 type GetJwtFnMetaParam = { params: Params; topic?: Topic };
 type Params = { jwt?: string; [key: string]: any };
 type Payload = object;
+type PhoenixMessage = {
+  event: string;
+  join_ref: string;
+  payload: object;
+  ref: string;
+  topic: string;
+};
 type PresenceCbs = {
   onJoin?: Callback;
   onLeave?: Callback;
@@ -207,14 +214,15 @@ export default class Lasagna {
       presence.onLeave(callbacks.onLeave);
     }
 
-    this.#socket.onMessage(
-      ({ topic: msgTopic, event, payload, ref, join_ref }) => {
+    this.#socket.onMessage((message) => {
+      const { topic: msgTopic, event, payload, ref, join_ref } =
+        message as PhoenixMessage;
+
         if (this.#shouldApplyPresenceDiff(event, msgTopic, topic)) {
           // @ts-ignore private (untyped) Channel API, used intentionally
           this.CHANNELS[topic].channel.trigger(event, payload, ref, join_ref);
         }
-      }
-    );
+    });
 
     this.CHANNELS[topic].presence = presence;
   }
@@ -336,7 +344,7 @@ export default class Lasagna {
     let exp;
 
     try {
-      const decodedJwt: DecodedJWT = JWT(jwt);
+      const decodedJwt: DecodedJWT = jwtDecode(jwt);
       if (decodedJwt.cxp) {
         cxp = decodedJwt.cxp * 1000;
       }
